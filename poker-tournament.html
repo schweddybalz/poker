@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Poker Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--felt:#0a2e1a;--gold:#c9a84c;--gold-light:#e8c96a;--gold-dark:#8b6914;--text:#f0ece4;--text-dim:#a09070;--border:rgba(201,168,76,0.3);--panel:rgba(0,0,0,0.42);--radius:12px;--glow:0 0 20px rgba(201,168,76,0.18);
+  --fz-timer:clamp(72px,14vw,130px);--fz-blind-val:clamp(32px,5vw,56px);--fz-blind-lbl:11px;--fz-next:clamp(20px,3vw,30px);--fz-chip-size:clamp(60px,9vw,80px);--fz-chip-num:clamp(14px,2vw,20px);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--felt);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;background-image:radial-gradient(ellipse at 20% 20%,rgba(201,168,76,0.05) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(201,168,76,0.05) 0%,transparent 60%),repeating-linear-gradient(45deg,transparent,transparent 35px,rgba(255,255,255,0.01) 35px,rgba(255,255,255,0.01) 70px);}
+.screen{display:none;min-height:100vh;}.screen.active{display:flex;flex-direction:column;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.55);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:2px;text-shadow:0 0 20px rgba(201,168,76,0.5);}
+.nav-tabs{display:flex;gap:4px;}
+.nav-tab{background:none;border:1px solid transparent;color:var(--text-dim);padding:5px 12px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:1px;transition:all .2s;text-transform:uppercase;}
+.nav-tab:hover,.nav-tab.active{background:var(--panel);border-color:var(--border);color:var(--gold);}
+.btn{background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:#1a0a00;border:none;padding:9px 20px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn:hover{filter:brightness(1.15);transform:translateY(-1px);}.btn:active{transform:translateY(0);}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text-dim);padding:7px 16px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-danger{background:linear-gradient(135deg,#7b1a1a,#c0392b);color:#fff;}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--text-dim);width:30px;height:30px;border-radius:6px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.btn-icon:hover{border-color:var(--gold);color:var(--gold);}
+.content{padding:16px;max-width:1100px;margin:0 auto;width:100%;flex:1;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--glow);}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--gold);letter-spacing:2px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;}
+@media(max-width:700px){.setup-grid{grid-template-columns:1fr;}}
+input[type="text"],input[type="number"],select{background:rgba(0,0,0,0.42);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;width:100%;transition:border-color .2s;}
+input:focus,select:focus{outline:none;border-color:var(--gold);}
+select option{background:#1a2a1a;}
+label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.field{margin-bottom:12px;}.field-row{display:grid;gap:10px;margin-bottom:12px;}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.toggle-label{color:var(--text-dim);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+.toggle-btns{display:flex;gap:3px;}
+.toggle-btn{background:rgba(0,0,0,0.42);border:1px solid var(--border);color:var(--text-dim);padding:5px 14px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.toggle-btn.active{background:rgba(201,168,76,0.15);border-color:var(--gold);color:var(--gold);}
+.player-entry{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:7px;transition:all .2s;}
+.player-entry:hover{border-color:var(--gold-dark);}
+.player-seat{font-family:'Share Tech Mono',monospace;color:var(--gold-dark);font-size:12px;width:20px;text-align:center;flex-shrink:0;}
+.player-name-text{flex:1;font-weight:600;font-size:15px;}
+.blind-table{width:100%;border-collapse:collapse;}
+.blind-table th{text-align:left;color:var(--text-dim);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:7px 9px;border-bottom:1px solid var(--border);}
+.blind-table td{padding:9px;border-bottom:1px solid rgba(201,168,76,0.1);font-size:14px;font-weight:500;}
+.blind-table tr.cur td{background:rgba(201,168,76,0.09);color:var(--gold);}
+.blind-table tr:hover td{background:rgba(201,168,76,0.05);}
+.add-blind-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:7px;margin-bottom:11px;align-items:end;}
+@media(max-width:600px){.add-blind-row{grid-template-columns:1fr 1fr;}}
+.chip-editor-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+.chip-preview-sm{width:34px;height:34px;border-radius:50%;border:2px dashed rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.swatch-row{display:flex;gap:4px;flex-wrap:wrap;}
+.color-swatch{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);cursor:pointer;transition:transform .15s;}
+.color-swatch:hover{transform:scale(1.25);}.color-swatch.sel{border-color:var(--gold);box-shadow:0 0 6px var(--gold);}
+.prize-row{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
+.prize-row label{min-width:65px;margin:0;}
+.scrollable{max-height:260px;overflow-y:auto;}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--gold-dark);border-radius:3px;}
+
+/* ===== TOURNAMENT ===== */
+#screen-tournament{background:var(--felt);}
+.t-layout{display:grid;grid-template-columns:1fr 290px;gap:12px;padding:12px;flex:1;align-items:start;}
+.main-col{display:flex;flex-direction:column;gap:10px;}
+.side-col{display:flex;flex-direction:column;gap:10px;}
+@media(max-width:720px){.t-layout{grid-template-columns:1fr;padding:8px;gap:8px;}}
+
+/* CLOCK */
+.clock-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px 14px 14px;text-align:center;position:relative;overflow:hidden;box-shadow:var(--glow);}
+.clock-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7;}
+.level-badge{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:4px;color:var(--text-dim);margin-bottom:2px;}
+.timer-display{font-family:'Share Tech Mono',monospace;font-size:var(--fz-timer);line-height:1;color:var(--gold);text-shadow:0 0 40px rgba(201,168,76,0.55),0 0 80px rgba(201,168,76,0.18);letter-spacing:-2px;transition:color .5s;}
+.timer-display.warn{color:#e67e22;text-shadow:0 0 40px rgba(230,126,34,0.6);}
+.timer-display.danger{color:#e74c3c;text-shadow:0 0 40px rgba(231,76,60,0.6);animation:blink 1s infinite;}
+.timer-display.brk{color:#27ae60;text-shadow:0 0 40px rgba(39,174,96,0.6);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+.lvl-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:8px;overflow:hidden;}
+.lvl-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold-dark),var(--gold));border-radius:2px;transition:width 1s linear;}
+.t-controls{display:flex;gap:8px;justify-content:center;margin-top:12px;}
+.btn-t{background:none;border:2px solid var(--gold-dark);color:var(--gold);width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.btn-t:hover{background:rgba(201,168,76,0.1);border-color:var(--gold);}
+.btn-t.pp{width:64px;height:64px;font-size:18px;border-width:3px;}
+@media(max-width:480px){.btn-t{width:42px;height:42px;font-size:16px;}.btn-t.pp{width:56px;height:56px;font-size:16px;}}
+
+/* BLINDS */
+.blinds-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--glow);}
+.blinds-row{display:grid;gap:10px;margin-bottom:12px;}
+.blinds-row.c2{grid-template-columns:1fr 1fr;}
+.blinds-row.c3{grid-template-columns:1fr 1fr 1fr;}
+.b-item{text-align:center;background:rgba(0,0,0,0.32);border-radius:10px;padding:12px 8px;border:1px solid rgba(201,168,76,0.18);}
+.b-label{font-size:var(--fz-blind-lbl);font-weight:700;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:5px;}
+.b-val{font-family:'Share Tech Mono',monospace;font-size:var(--fz-blind-val);color:var(--gold);line-height:1;}
+.next-box{background:rgba(0,0,0,0.22);border:1px solid rgba(201,168,76,0.13);border-radius:8px;padding:10px 16px;text-align:center;}
+.next-lbl{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
+.next-val{font-family:'Share Tech Mono',monospace;font-size:var(--fz-next);color:var(--gold-dark);display:block;}
+
+/* CHIPS — big circles, centered */
+.chips-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center;}
+.chip-circle{width:var(--fz-chip-size);height:var(--fz-chip-size);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:var(--fz-chip-num);font-weight:700;border:3px dashed rgba(255,255,255,0.22);flex-shrink:0;text-align:center;cursor:default;transition:transform .2s;}
+.chip-circle:hover{transform:scale(1.08);}
+
+/* COLOR-UP ALERT */
+.colorup-alert{background:rgba(201,168,76,0.12);border:1px solid var(--gold-dark);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:600;font-size:14px;color:var(--gold-light);}
+.colorup-alert button{background:none;border:none;color:var(--text-dim);cursor:pointer;margin-left:auto;font-size:16px;padding:0 2px;}
+.colorup-alert button:hover{color:var(--text);}
+
+/* SIDEBAR */
+.pot-total{font-family:'Share Tech Mono',monospace;font-size:26px;color:var(--gold);text-align:center;padding:4px 0;}
+.pot-sub{font-size:12px;color:var(--text-dim);text-align:center;letter-spacing:.5px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
+.stat-item{background:rgba(0,0,0,0.3);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid rgba(201,168,76,0.1);}
+.stat-val{font-family:'Share Tech Mono',monospace;font-size:17px;color:var(--gold);}
+.stat-lbl{font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+.action-row{display:flex;gap:7px;flex-wrap:wrap;}
+
+/* SEATING */
+.seat-table{width:100%;border-collapse:collapse;}
+.seat-table td{padding:6px 5px;font-size:14px;font-weight:600;vertical-align:middle;}
+.seat-table tr.busted-row td{opacity:.32;}
+.pos-badge{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;flex-shrink:0;border:2px solid rgba(255,255,255,0.15);}
+.pos-D{background:#e0d8c0;color:#1a1a1a;border-color:#999;}
+.pos-SB{background:#1a4a8a;color:#fff;border-color:#3a7ace;}
+.pos-BB{background:#8a1a1a;color:#fff;border-color:#ce3a3a;}
+.pos-dead{background:#333;color:#555;border-color:#555;}
+.out-badge{font-size:10px;padding:2px 6px;border-radius:3px;background:rgba(192,57,43,0.2);color:#e74c3c;border:1px solid #e74c3c;font-weight:700;}
+.rebuy-badge{font-size:10px;color:var(--gold-dark);background:rgba(201,168,76,0.1);padding:1px 4px;border-radius:3px;font-weight:700;}
+
+/* SLIDER TOGGLE */
+.slider-row{display:flex;align-items:center;gap:8px;}
+.slider-lbl{font-size:12px;color:var(--text-dim);font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.slider{position:relative;width:38px;height:22px;flex-shrink:0;}
+.slider input{opacity:0;width:0;height:0;position:absolute;}
+.slider-track{position:absolute;inset:0;background:#333;border-radius:11px;cursor:pointer;transition:background .2s;border:1px solid var(--border);}
+.slider input:checked+.slider-track{background:rgba(201,168,76,0.4);border-color:var(--gold-dark);}
+.slider-track::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#666;border-radius:50%;transition:transform .2s;}
+.slider input:checked+.slider-track::before{transform:translateX(16px);background:var(--gold);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.modal-overlay.hidden{display:none;}
+.modal{background:#0e2416;border:1px solid var(--border);border-radius:var(--radius);padding:22px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.8),var(--glow);}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:21px;color:var(--gold);letter-spacing:2px;margin-bottom:16px;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+
+/* BREAK */
+.brk-overlay{position:fixed;inset:0;background:rgba(0,30,10,0.96);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;backdrop-filter:blur(10px);}
+.brk-overlay.hidden{display:none;}
+.brk-overlay h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(58px,11vw,108px);color:#27ae60;letter-spacing:8px;text-shadow:0 0 40px rgba(39,174,96,0.6);}
+.brk-sub{font-size:14px;letter-spacing:4px;color:#27ae60;font-weight:700;text-transform:uppercase;}
+.brk-actions{display:flex;gap:10px;margin-top:8px;}
+
+/* RESULTS */
+.winner-bar{text-align:center;padding:18px;font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--gold);letter-spacing:4px;text-shadow:0 0 30px rgba(201,168,76,0.5);}
+.finish-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,0.3);margin-bottom:7px;}
+.finish-place{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold-dark);width:34px;text-align:center;}
+.fp-gold{color:#FFD700;}.fp-silver{color:#C0C0C0;}.fp-bronze{color:#CD7F32;}
+.finish-pay{margin-left:auto;font-family:'Share Tech Mono',monospace;color:var(--gold);font-size:14px;}
+.toast{position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.9);border:1px solid var(--gold);color:var(--gold);padding:10px 18px;border-radius:9px;font-weight:700;font-size:14px;z-index:2000;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;max-width:calc(100vw - 40px);}
+.toast.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- BREAK OVERLAY -->
+<div class="brk-overlay hidden" id="brkOverlay">
+  <div class="brk-sub">Scheduled Break</div>
+  <h1>BREAK</h1>
+  <div class="timer-display brk" id="brkTimer" style="font-size:70px;">10:00</div>
+  <div id="brkColorUpAlert" style="display:none;color:var(--gold-light);font-size:16px;font-weight:700;letter-spacing:1px;text-align:center;padding:0 20px;"></div>
+  <div class="brk-actions">
+    <button class="btn" id="brkRebuyBtn" onclick="showRebuyModal()" style="display:none;">💰 Rebuy / Add-on</button>
+    <button class="btn-outline" onclick="skipBreak()">Skip Break →</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- ==================== SETUP ==================== -->
+<div class="screen active" id="screen-setup">
+  <nav>
+    <div class="logo">🃏 Poker Timer</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="setupTab('players',this)">Players</button>
+      <button class="nav-tab" onclick="setupTab('blinds',this)">Blinds</button>
+      <button class="nav-tab" onclick="setupTab('chips',this)">Chips</button>
+      <button class="nav-tab" onclick="setupTab('settings',this)">Settings</button>
+    </div>
+    <button class="btn" onclick="startTournament()">▶ Start</button>
+  </nav>
+  <div class="content">
+    <div id="tab-players">
+      <div class="setup-grid">
+        <div>
+          <div class="card">
+            <div class="card-title">🧑 Add Player</div>
+            <div class="field"><label>Name</label><input type="text" id="newPlayerName" placeholder="Enter name..." onkeydown="if(event.key==='Enter')addPlayer()"></div>
+            <button class="btn" onclick="addPlayer()" style="width:100%">+ Add Player</button>
+          </div>
+          <div class="card">
+            <div class="card-title">💰 Buy-in</div>
+            <div class="field-row" style="grid-template-columns:1fr 1fr;">
+              <div class="field"><label>Buy-in ($)</label><input type="number" id="buyinAmount" value="50" min="1"></div>
+              <div class="field"><label>Starting Chips</label><input type="number" id="startingChips" value="1000" min="100" step="100"></div>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">Rebuys?</span>
+              <label class="slider">
+                <input type="checkbox" id="rebuySlider" checked onchange="setRebuyToggle(this.checked)">
+                <span class="slider-track"></span>
+              </label>
+              <span class="toggle-label" id="limitRebuyLabel" style="margin-left:12px;">Limit?</span>
+              <label class="slider" id="limitRebuyLabelSlider">
+                <input type="checkbox" id="limitRebuySlider" onchange="setLimitRebuyToggle(this.checked)">
+                <span class="slider-track"></span>
+              </label>
+            </div>
+            <div id="rebuyOpts">
+              <div class="field"><label>Rebuy Chips</label><input type="number" id="rebuyChips" value="1000" min="100" step="100"></div>
+              <div id="limitRebuyOpts" style="display:none;">
+                <div class="field"><label>Max / Player</label><input type="number" id="maxRebuys" value="2" min="1" max="10"></div>
+              </div>
+              <div class="field"><label>Rebuy Cutoff (after Round)</label><input type="number" id="rebuyCutoff" value="3" min="1"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+          <div class="card" style="flex:1;display:flex;flex-direction:column;">
+            <div class="card-title" style="justify-content:space-between;">
+              <span>Player List</span>
+              <span id="playerCountBadge" style="font-size:13px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;"></span>
+            </div>
+            <div id="playerList" style="flex:1;overflow-y:auto;"><div style="color:var(--text-dim);text-align:center;padding:18px;font-size:13px;">No players yet.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-blinds" style="display:none">
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span>⏱ Blind Structure</span>
+          <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+            <span style="color:var(--text-dim);font-size:11px;letter-spacing:1px;text-transform:uppercase;">Round Time:</span>
+            <button class="btn-outline btn-sm" onclick="loadPreset(10)">10 min</button>
+            <button class="btn-outline btn-sm" onclick="loadPreset(20)">20 min</button>
+            <button class="btn-outline btn-sm" onclick="loadPreset(30)">30 min</button>
+          </div>
+        </div>
+        <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">🔔 = 10-min break fires after that level &nbsp;·&nbsp; Ante = 0 to skip</div>
+        <div class="add-blind-row">
+          <div class="field" style="margin:0"><label>Small</label><input type="number" id="nb_sb" value="25" min="1"></div>
+          <div class="field" style="margin:0"><label>Big</label><input type="number" id="nb_bb" value="50" min="1"></div>
+          <div class="field" style="margin:0"><label>Ante</label><input type="number" id="nb_ante" value="0" min="0"></div>
+          <div class="field" style="margin:0"><label>Minutes</label><input type="number" id="nb_min" value="20" min="1" max="90"></div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="nb_break" style="width:auto;accent-color:var(--gold);"><label style="margin:0;font-size:11px;white-space:nowrap;">🔔 Break</label></div>
+            <button class="btn btn-sm" onclick="addBlindLevel()">+ Add</button>
+          </div>
+        </div>
+        <div class="scrollable" style="max-height:380px;">
+          <table class="blind-table">
+            <thead><tr><th>Rnd</th><th>Small</th><th>Big</th><th>Ante</th><th>Time</th><th></th></tr></thead>
+            <tbody id="blindTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-chips" style="display:none">
+      <div class="card">
+        <div class="card-title">🎰 Chip Denominations</div>
+        <div id="chipEditor"></div>
+        <button class="btn-outline btn-sm" onclick="addChipDenom()" style="margin-top:6px;">+ Add Denomination</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💵 Prize Structure</div>
+        <div class="field"><label>Paid Positions</label>
+          <select id="paidPositions" onchange="renderPrizeRows()">
+            <option value="1">1 — Winner Take All</option><option value="2">2</option>
+            <option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+          </select>
+        </div>
+        <div id="prizeRows"></div>
+        <div id="prizeWarn" style="color:#e74c3c;font-size:12px;margin-top:6px;display:none;">Must total 100%</div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,rgba(201,168,76,0.06),rgba(0,0,0,0.4));border-color:rgba(201,168,76,0.4);">
+        <div class="card-title" style="margin-bottom:6px;">🎰 Standard T1,000 Stack</div>
+        <div style="color:var(--text-dim);font-size:12px;margin-bottom:16px;letter-spacing:0.3px;">Reference — chip counts per player at start</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:grid;grid-template-columns:36px 1fr auto auto;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#c0392b;border:3px dashed rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:#fff;">5</div>
+            <div>
+              <div style="font-weight:700;font-size:15px;">Red</div>
+              <div style="font-size:12px;color:var(--text-dim);">20 chips</div>
+            </div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim);">20 × 5</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:15px;color:var(--gold);text-align:right;min-width:44px;">= 100</div>
+          </div>
+          <div style="display:grid;grid-template-columns:36px 1fr auto auto;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#27ae60;border:3px dashed rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:#fff;">25</div>
+            <div>
+              <div style="font-weight:700;font-size:15px;">Green</div>
+              <div style="font-size:12px;color:var(--text-dim);">16 chips</div>
+            </div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim);">16 × 25</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:15px;color:var(--gold);text-align:right;min-width:44px;">= 400</div>
+          </div>
+          <div style="display:grid;grid-template-columns:36px 1fr auto auto;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#2c2c2c;border:3px dashed rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:#fff;">100</div>
+            <div>
+              <div style="font-weight:700;font-size:15px;">Black</div>
+              <div style="font-size:12px;color:var(--text-dim);">5 chips</div>
+            </div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim);">5 × 100</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:15px;color:var(--gold);text-align:right;min-width:44px;">= 500</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(201,168,76,0.2);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Total per player</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--gold);letter-spacing:2px;">T1,000</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-settings" style="display:none">
+      <div class="card">
+        <div class="card-title">⚙️ Settings</div>
+        <div class="setup-grid">
+          <div>
+            <div class="field"><label>Tournament Name</label><input type="text" id="tournamentName" value="Home Game"></div>
+            <div class="toggle-row" style="margin-bottom:14px;">
+              <span class="toggle-label">Sound Alerts</span>
+              <label class="slider"><input type="checkbox" id="soundEnabled" checked><span class="slider-track"></span></label>
+            </div>
+            <div class="toggle-row" style="margin-bottom:14px;">
+              <span class="toggle-label">Auto-advance Levels</span>
+              <label class="slider"><input type="checkbox" id="autoAdvance" checked><span class="slider-track"></span></label>
+            </div>
+            <div class="field"><label>Break Duration (minutes)</label><input type="number" id="breakDuration" value="10" min="1" max="60"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TOURNAMENT ==================== -->
+<div class="screen" id="screen-tournament">
+  <nav>
+    <div class="logo" id="tName">🃏 Poker Timer</div>
+    <div class="nav-tabs">
+      <button class="nav-tab" onclick="showTModal('players')">Players</button>
+      <button class="nav-tab" onclick="showTModal('blinds')">Blinds</button>
+      <button class="nav-tab" onclick="showTModal('settings')">Settings</button>
+      <button class="nav-tab" onclick="showTModal('results')">Results</button>
+    </div>
+    <button class="btn btn-sm btn-danger" onclick="confirmEnd()">End Tournament</button>
+  </nav>
+  <div class="t-layout">
+    <div class="main-col">
+      <div class="clock-card">
+        <div class="level-badge" id="lvlBadge">ROUND 1</div>
+        <div class="timer-display" id="timerDisp">20:00</div>
+        <div class="lvl-bar"><div class="lvl-bar-fill" id="lvlBarFill" style="width:0%"></div></div>
+        <div class="t-controls">
+          <button class="btn-t" onclick="prevLevel()" title="Previous round">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+          </button>
+          <button class="btn-t" onclick="adjustTime(-60)" title="-1 min">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6zm.5-6 8.5 6V6z"/></svg>
+          </button>
+          <button class="btn-t pp" id="ppBtn" onclick="toggleTimer()">
+            <svg id="ppIcon" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="btn-t" onclick="adjustTime(60)" title="+1 min">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6zm9-12v12l8.5-6z"/></svg>
+          </button>
+          <button class="btn-t" onclick="nextLevel()" title="Next round">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6zm8.5 0h2V6h-2z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="blinds-card">
+        <div id="colorUpAlerts"></div>
+        <div class="blinds-row c2" id="blindsRow"></div>
+        <div class="next-box">
+          <div class="next-lbl">Next Round</div>
+          <span class="next-val" id="nextBlinds">—</span>
+        </div>
+      </div>
+      <div class="card" style="padding:14px 16px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--gold);letter-spacing:2px;margin-bottom:10px;">🎰 Chips</div>
+        <div class="chips-row" id="chipStrip"></div>
+      </div>
+    </div>
+    <div class="side-col">
+      <div class="card" style="margin:0;padding:14px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold);letter-spacing:2px;margin-bottom:8px;">💰 Prize Pool</div>
+        <div class="pot-total" id="potTotal">$0</div>
+        <div class="pot-sub" id="potSub">0 players</div>
+        <div class="stat-grid">
+          <div class="stat-item"><div class="stat-val" id="stActive">0</div><div class="stat-lbl">Active</div></div>
+          <div class="stat-item"><div class="stat-val" id="stElim">0</div><div class="stat-lbl">Busted</div></div>
+          <div class="stat-item"><div class="stat-val" id="stAvg">—</div><div class="stat-lbl">Avg Stack</div></div>
+          <div class="stat-item"><div class="stat-val" id="stTotal">—</div><div class="stat-lbl">In Play</div></div>
+        </div>
+        <div class="action-row" style="margin-top:10px;">
+          <button class="btn btn-sm" id="rbBtn" onclick="showRebuyModal()">Rebuy</button>
+          <button class="btn btn-sm btn-danger" onclick="showEliminateModal()">Bust Out</button>
+        </div>
+      </div>
+      <div class="card" style="margin:0;padding:14px;flex:1;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--gold);letter-spacing:2px;margin-bottom:10px;">🪑 Players</div>
+        <div style="overflow-y:auto;max-height:340px;">
+          <table class="seat-table" id="seatTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== RESULTS ==================== -->
+<div class="screen" id="screen-results">
+  <nav>
+    <div class="logo">🏆 Results</div>
+    <button class="btn" onclick="newTournament()">New Tournament</button>
+  </nav>
+  <div class="content">
+    <div class="winner-bar" id="resultsWinner">🏆 Winner! 🏆</div>
+    <div class="card"><div class="card-title">Final Standings</div><div id="finalStandings"></div></div>
+    <div class="card">
+      <div class="card-title">Summary</div>
+      <div class="stat-grid">
+        <div class="stat-item"><div class="stat-val" id="rPlayers">—</div><div class="stat-lbl">Players</div></div>
+        <div class="stat-item"><div class="stat-val" id="rPot">—</div><div class="stat-lbl">Pot</div></div>
+        <div class="stat-item"><div class="stat-val" id="rRebuys">—</div><div class="stat-lbl">Rebuys</div></div>
+        <div class="stat-item"><div class="stat-val" id="rLevels">—</div><div class="stat-lbl" id="rLevelsLbl">Rounds</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const S={
+  players:[],blinds:[],chips:[],settings:{},
+  level:0,timerSec:0,levelTotalSec:0,running:false,onBreak:false,
+  seatingOrder:[],
+  totalRebuys:0,finishOrder:[],
+  timerInterval:null,brkSec:0,brkInterval:null,
+  dismissedColorUps:{},
+};
+let allowRebuys=true;
+
+// ── DEFAULTS ─────────────────────────────────────────────
+function defaultChips(){
+  return [
+    {value:5,   color:'#c0392b',text:'#fff',startCount:20},
+    {value:25,  color:'#27ae60',text:'#fff',startCount:16},
+    {value:100, color:'#2c2c2c',text:'#fff',startCount:5},
+    {value:500, color:'#8e44ad',text:'#fff',startCount:0},
+    {value:1000,color:'#c8b400',text:'#333',startCount:0},
+  ];
+}
+function makeSchedule(min){
+  return [
+    {sb:10, bb:20, ante:0,min,break:false},
+    {sb:15, bb:30, ante:0,min,break:false},
+    {sb:20, bb:40, ante:0,min,break:true },
+    {sb:25, bb:50, ante:0,min,break:false},
+    {sb:50, bb:100,ante:0,min,break:false},
+    {sb:75, bb:150,ante:0,min,break:true },
+    {sb:100,bb:200,ante:0,min,break:false},
+    {sb:150,bb:300,ante:0,min,break:false},
+    {sb:200,bb:400,ante:0,min,break:true },
+    {sb:300,bb:600,ante:0,min,break:false},
+    {sb:400,bb:800,ante:0,min,break:false},
+    {sb:500,bb:1000,ante:0,min,break:true },
+    {sb:600,bb:1200,ante:0,min,break:false},
+    {sb:800,bb:1600,ante:0,min,break:false},
+    {sb:1000,bb:2000,ante:0,min,break:false},
+  ];
+}
+
+// ── INIT ─────────────────────────────────────────────────
+window.onload=()=>{
+  S.chips=defaultChips();
+  S.blinds=makeSchedule(20);
+  renderBlindTable();renderChipEditor();renderPrizeRows();
+};
+
+// ── SETUP TABS ───────────────────────────────────────────
+function setupTab(tab,btn){
+  document.querySelectorAll('#screen-setup .nav-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['players','blinds','chips','settings'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+  if(tab==='blinds')renderBlindTable();
+  if(tab==='chips')renderChipEditor();
+}
+function setRebuyToggle(v){
+  allowRebuys=v;
+  document.getElementById('rebuyOpts').style.display=v?'':'none';
+  document.getElementById('limitRebuyLabel').style.display=v?'':'none';
+  document.getElementById('limitRebuyLabelSlider').style.display=v?'':'none';
+}
+function setLimitRebuyToggle(v){
+  document.getElementById('limitRebuyOpts').style.display=v?'':'none';
+}
+
+// ── PLAYERS ──────────────────────────────────────────────
+function addPlayer(){
+  const inp=document.getElementById('newPlayerName');
+  const name=inp.value.trim();
+  if(!name){showToast('Enter a name');return;}
+  if(S.players.find(p=>p.name.toLowerCase()===name.toLowerCase())){showToast('Already added');return;}
+  const chips=parseInt(document.getElementById('startingChips').value)||1000;
+  const buyin=parseInt(document.getElementById('buyinAmount').value)||50;
+  S.players.push({name,chips,busted:false,rebuys:0,buyinAmount:buyin,startingChips:chips});
+  inp.value='';inp.focus();renderPlayerList();
+}
+function removePlayer(i){S.players.splice(i,1);renderPlayerList();}
+function renderPlayerList(){
+  const list=document.getElementById('playerList');
+  const badge=document.getElementById('playerCountBadge');
+  badge.textContent=S.players.length+' players';
+  if(!S.players.length){list.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:18px;font-size:13px;">No players yet.</div>';return;}
+  list.innerHTML=S.players.map((p,i)=>`
+    <div class="player-entry">
+      <div class="player-seat">${i+1}</div>
+      <div class="player-name-text">${p.name}</div>
+      <button class="btn-icon" onclick="removePlayer(${i})">✕</button>
+    </div>`).join('');
+}
+
+// ── BLINDS ───────────────────────────────────────────────
+function loadPreset(min){S.blinds=makeSchedule(min);renderBlindTable();showToast(min+'-min rounds loaded');}
+function addBlindLevel(){
+  const sb=parseInt(document.getElementById('nb_sb').value)||25;
+  const bb=parseInt(document.getElementById('nb_bb').value)||50;
+  const ante=parseInt(document.getElementById('nb_ante').value)||0;
+  const min=parseInt(document.getElementById('nb_min').value)||20;
+  const brk=document.getElementById('nb_break').checked;
+  S.blinds.push({sb,bb,ante,min,break:brk});
+  document.getElementById('nb_break').checked=false;
+  document.getElementById('nb_sb').value=sb*2;
+  document.getElementById('nb_bb').value=bb*2;
+  if(ante)document.getElementById('nb_ante').value=Math.round(ante*1.5/25)*25;
+  renderBlindTable();
+}
+function removeBlindLevel(i){S.blinds.splice(i,1);renderBlindTable();}
+function renderBlindTable(){
+  const tb=document.getElementById('blindTableBody');
+  if(!tb)return;
+  tb.innerHTML=S.blinds.map((b,i)=>`
+    <tr><td style="color:var(--gold-dark);font-family:'Share Tech Mono',monospace;">${i+1}${b.break?' 🔔':''}</td>
+    <td>${fn(b.sb)}</td><td>${fn(b.bb)}</td><td>${b.ante>0?fn(b.ante):'—'}</td><td>${b.min}m</td>
+    <td><button class="btn-icon" onclick="removeBlindLevel(${i})">✕</button></td></tr>`).join('');
+}
+// ── CHIPS ────────────────────────────────────────────────
+const SWATCHES=[
+  {hex:'#f0ece4',text:'#333'},{hex:'#c0392b',text:'#fff'},{hex:'#2980b9',text:'#fff'},
+  {hex:'#27ae60',text:'#fff'},{hex:'#2c2c2c',text:'#fff'},{hex:'#8e44ad',text:'#fff'},
+  {hex:'#c8b400',text:'#333'},{hex:'#e67e22',text:'#fff'},{hex:'#1abc9c',text:'#fff'},{hex:'#e91e63',text:'#fff'},
+];
+function renderChipEditor(){
+  const el=document.getElementById('chipEditor');
+  if(!el)return;
+  el.innerHTML=S.chips.map((c,i)=>`
+    <div class="chip-editor-row">
+      <div class="chip-preview-sm" style="background:${c.color};color:${c.text};">${fn(c.value)}</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label style="margin:0;font-size:11px;">Value:</label>
+          <input type="number" value="${c.value}" min="1" style="max-width:70px;" onchange="S.chips[${i}].value=parseInt(this.value)||1;renderChipEditor();">
+        </div>
+        <div class="swatch-row">
+          ${SWATCHES.map(sw=>`<div class="color-swatch ${c.color===sw.hex?'sel':''}" style="background:${sw.hex};" onclick="S.chips[${i}].color='${sw.hex}';S.chips[${i}].text='${sw.text}';renderChipEditor();"></div>`).join('')}
+        </div>
+      </div>
+      <button class="btn-icon" onclick="S.chips.splice(${i},1);renderChipEditor();">✕</button>
+    </div>`).join('');
+}
+function addChipDenom(){
+  const last=S.chips.length?S.chips[S.chips.length-1].value:1000;
+  S.chips.push({value:last*5,color:'#e67e22',text:'#fff',startCount:0});
+  renderChipEditor();
+}
+
+// ── PRIZE ────────────────────────────────────────────────
+function renderPrizeRows(){
+  const el=document.getElementById('prizeRows');if(!el)return;
+  const num=parseInt(document.getElementById('paidPositions')?.value)||3;
+  const defs=[50,30,20,10,5,3,2];
+  const existing=Array.from(el.querySelectorAll('.pct')).map(i=>parseFloat(i.value));
+  el.innerHTML=Array.from({length:num},(_,i)=>`
+    <div class="prize-row">
+      <label>${ord(i+1)} Place</label>
+      <input type="number" class="pct" value="${existing[i]??defs[i]??0}" min="0" max="100" step="1" style="max-width:80px;" onchange="chkPrize()">
+      <span style="color:var(--text-dim);font-size:13px;">%</span>
+    </div>`).join('');
+}
+function chkPrize(){
+  const s=Array.from(document.querySelectorAll('.pct')).reduce((a,i)=>a+parseFloat(i.value||0),0);
+  document.getElementById('prizeWarn').style.display=Math.abs(s-100)>0.1?'':'none';
+}
+function getPcts(){return Array.from(document.querySelectorAll('.pct')).map(i=>parseFloat(i.value)||0);}
+
+// ── START TOURNAMENT ─────────────────────────────────────
+function startTournament(){
+  if(S.players.length<2){showToast('Need at least 2 players');return;}
+  if(!S.blinds.length){showToast('Add at least one blind level');return;}
+  S.settings={
+    buyinAmount:parseInt(document.getElementById('buyinAmount').value)||50,
+    startingChips:parseInt(document.getElementById('startingChips').value)||1000,
+    allowRebuys,
+    rebuyChips:parseInt(document.getElementById('rebuyChips').value)||1000,
+    limitRebuys:document.getElementById('limitRebuySlider')?.checked??true,
+    maxRebuys:parseInt(document.getElementById('maxRebuys').value)||999,
+    rebuyCutoff:parseInt(document.getElementById('rebuyCutoff').value)||3,
+    name:document.getElementById('tournamentName').value||'Home Game',
+    sound:document.getElementById('soundEnabled').checked,
+    warnAt:60,
+    autoAdv:document.getElementById('autoAdvance').checked,
+    brkDur:parseInt(document.getElementById('breakDuration').value)||10,
+    pcts:getPcts(),
+    paidPos:parseInt(document.getElementById('paidPositions').value)||3,
+  };
+  // randomize seating
+  const idx=S.players.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  S.seatingOrder=idx;
+  S.players.forEach(p=>{p.busted=false;p.rebuys=0;p.chips=S.settings.startingChips;});
+  S.level=0;S.totalRebuys=0;S.finishOrder=[];S.running=false;S.onBreak=false;
+  S.dismissedColorUps={};
+  loadLevel(0);
+  showScreen('tournament');
+  document.getElementById('tName').textContent='🃏 '+S.settings.name;
+  document.getElementById('rbBtn').style.display=allowRebuys?'':'none';
+  renderAll();
+  showToast('🎲 Seats randomized — good luck!');
+}
+
+// ── LEVEL / TIMER ────────────────────────────────────────
+function loadLevel(i){
+  if(i>=S.blinds.length)return;
+  S.level=i;
+  const lvl=S.blinds[i];
+  S.timerSec=lvl.min*60;S.levelTotalSec=lvl.min*60;
+  S.running=false;clearInterval(S.timerInterval);
+  updateTimerDisp();updateBlindsDisp();updatePPBtn();renderChipStrip();checkColorUp();
+}
+function toggleTimer(){
+  if(S.running){S.running=false;clearInterval(S.timerInterval);}
+  else{S.running=true;S.timerInterval=setInterval(tick,1000);}
+  updatePPBtn();
+}
+function tick(){
+  if(S.timerSec<=0){clearInterval(S.timerInterval);S.running=false;levelEnd();return;}
+  S.timerSec--;
+  if(S.timerSec===S.settings.warnAt)playSound('warn');
+  if(S.timerSec>0&&S.timerSec<=10)playSound('beep');
+  updateTimerDisp();
+}
+function levelEnd(){
+  playSound('level');
+  const lvl=S.blinds[S.level];
+  if(lvl&&lvl.break){startBreak();return;}
+  if(S.settings.autoAdv)nextLevel();
+  else{updatePPBtn();showToast('⏰ Round done — press ⏭ to continue');}
+}
+function nextLevel(){
+  if(S.level<S.blinds.length-1){
+    loadLevel(S.level+1);
+    if(S.settings.autoAdv){S.running=true;S.timerInterval=setInterval(tick,1000);updatePPBtn();}
+    showToast('▶ Round '+(S.level+1));renderAll();
+  }else showToast('🏁 Final level!');
+}
+function prevLevel(){if(S.level>0){loadLevel(S.level-1);renderAll();}}
+function adjustTime(sec){S.timerSec=Math.max(0,S.timerSec+sec);updateTimerDisp();}
+function updatePPBtn(){
+  const icon=document.getElementById('ppIcon');
+  if(!icon)return;
+  icon.innerHTML=S.running
+    ?'<path d="M6 19h4V5H6zm8-14v14h4V5z"/>'   // pause
+    :'<path d="M8 5v14l11-7z"/>';               // play
+}
+function updateTimerDisp(){
+  const el=document.getElementById('timerDisp');if(!el)return;
+  el.textContent=ft(S.timerSec);
+  el.className='timer-display';
+  const w=S.settings.warnAt||60;
+  if(S.timerSec<=10&&S.timerSec>0)el.classList.add('danger');
+  else if(S.timerSec<=w)el.classList.add('warn');
+  const fill=document.getElementById('lvlBarFill');
+  if(fill&&S.levelTotalSec>0)fill.style.width=((S.levelTotalSec-S.timerSec)/S.levelTotalSec*100)+'%';
+  const badge=document.getElementById('lvlBadge');
+  if(badge){const l=S.blinds[S.level];badge.textContent='ROUND '+(S.level+1)+(l&&l.break?' 🔔':'');}
+}
+
+// ── BLINDS DISPLAY ───────────────────────────────────────
+function updateBlindsDisp(){
+  const lvl=S.blinds[S.level];const nxt=S.blinds[S.level+1];if(!lvl)return;
+  const row=document.getElementById('blindsRow');
+  if(lvl.ante>0){
+    row.className='blinds-row c3';
+    row.innerHTML=`
+      <div class="b-item"><div class="b-label">Small Blind</div><div class="b-val">${fn(lvl.sb)}</div></div>
+      <div class="b-item"><div class="b-label">Big Blind</div><div class="b-val">${fn(lvl.bb)}</div></div>
+      <div class="b-item"><div class="b-label">Ante</div><div class="b-val">${fn(lvl.ante)}</div></div>`;
+  }else{
+    row.className='blinds-row c2';
+    row.innerHTML=`
+      <div class="b-item"><div class="b-label">Small Blind</div><div class="b-val">${fn(lvl.sb)}</div></div>
+      <div class="b-item"><div class="b-label">Big Blind</div><div class="b-val">${fn(lvl.bb)}</div></div>`;
+  }
+  const nb=document.getElementById('nextBlinds');
+  if(nb)nb.textContent=nxt?(nxt.ante>0?`${fn(nxt.sb)} / ${fn(nxt.bb)} / ${fn(nxt.ante)} ante`:`${fn(nxt.sb)} / ${fn(nxt.bb)}`):'Final Level';
+}
+
+// ── COLOR-UP DETECTION ───────────────────────────────────
+// For each chip, check if all future blind levels (including current) use values
+// that are multiples of a denomination larger than this chip.
+// If so, this chip is obsolete from now on.
+function checkColorUp(){
+  const alertBox=document.getElementById('colorUpAlerts');if(!alertBox)return;
+  const futureBlinds=S.blinds.slice(S.level); // current level onward
+  const alerts=[];
+  S.chips.slice().sort((a,b)=>a.value-b.value).forEach(chip=>{
+    const key='chip_'+chip.value+'_lvl_'+S.level;
+    if(S.dismissedColorUps[key])return;
+    // check if every future blind value (sb, bb, ante) is divisible by a chip larger than this one
+    const largerChips=S.chips.filter(c=>c.value>chip.value);
+    if(!largerChips.length)return; // no larger chip exists
+    const smallestLarger=Math.min(...largerChips.map(c=>c.value));
+    // obsolete if every future blind amount (nonzero) is a multiple of smallestLarger
+    const allAmounts=futureBlinds.flatMap(b=>[b.sb,b.bb,b.ante>0?b.ante:null].filter(v=>v));
+    const allMultiples=allAmounts.every(v=>v%smallestLarger===0);
+    if(allMultiples){
+      alerts.push({chip,key});
+    }
+  });
+  alertBox.innerHTML=alerts.map(({chip,key})=>`
+    <div class="colorup-alert">
+      🎰 Color up your <strong>${fn(chip.value)}s</strong>!
+      <button onclick="S.dismissedColorUps['${key}']=true;checkColorUp();">✕</button>
+    </div>`).join('');
+}
+
+// ── CHIP STRIP ───────────────────────────────────────────
+function renderChipStrip(){
+  const el=document.getElementById('chipStrip');if(!el)return;
+  el.innerHTML=S.chips.slice().sort((a,b)=>a.value-b.value).map(c=>`
+    <div class="chip-circle" style="background:${c.color};color:${c.text};border-color:${darken(c.color)};">
+      ${fn(c.value)}
+    </div>`).join('');
+}
+
+// ── STATS ────────────────────────────────────────────────
+// Total chips never leaves the game. Always recompute from:
+//   startingChips × all players + rebuyChips × totalRebuys
+// Avg = totalChips / activePlayers  →  rises as players bust.
+function renderStats(){
+  const active=S.players.filter(p=>!p.busted);
+  const busted=S.players.filter(p=>p.busted);
+  const totalEntries=S.players.length+S.totalRebuys;
+  const pot=totalEntries*S.settings.buyinAmount;
+  document.getElementById('potTotal').textContent='$'+pot.toLocaleString();
+  document.getElementById('potSub').textContent=S.totalRebuys>0
+    ?`${S.players.length} players · ${S.totalRebuys} rebuy${S.totalRebuys!==1?'s':''}`
+    :`${S.players.length} players`;
+  document.getElementById('stActive').textContent=active.length;
+  document.getElementById('stElim').textContent=busted.length;
+  // Always derive from source of truth — never rely on accumulated state
+  const tot=(S.settings.startingChips||0)*S.players.length
+           +(S.settings.rebuyChips||S.settings.startingChips||0)*S.totalRebuys;
+  const avg=active.length?Math.round(tot/active.length):0;
+  document.getElementById('stAvg').textContent=avg.toLocaleString();
+  document.getElementById('stTotal').textContent=tot.toLocaleString();
+}
+
+function renderSeatTable(){
+  const el=document.getElementById('seatTable');if(!el)return;
+  el.innerHTML=S.seatingOrder.map(pi=>{
+    const p=S.players[pi];
+    return `<tr class="${p.busted?'busted-row':''}">
+      <td>${p.name}${p.rebuys>0?` <span class="rebuy-badge">R${p.rebuys}</span>`:''}</td>
+      <td style="text-align:right;">${p.busted?'<span class="out-badge">Out</span>':''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER ALL ───────────────────────────────────────────
+function renderAll(){
+  renderStats();renderSeatTable();renderChipStrip();
+  updateBlindsDisp();updateTimerDisp();checkColorUp();
+}
+
+// ── BREAK ────────────────────────────────────────────────
+function isRebuyWindowOpen(){
+  if(!S.settings.allowRebuys)return false;
+  const cutoff=S.settings.rebuyCutoff||3;
+  if(S.onBreak) return S.level<=cutoff-1;
+  return S.level<cutoff;
+}
+function rebuyEligible(){
+  const max=S.settings.limitRebuys?S.settings.maxRebuys:999;
+  return S.players.filter(p=>!p.busted&&p.rebuys<max);
+}
+function startBreak(){
+  S.onBreak=true;S.brkSec=S.settings.brkDur*60;
+  document.getElementById('brkOverlay').classList.remove('hidden');
+  updBrkDisp();S.brkInterval=setInterval(brkTick,1000);
+  playSound('brk');
+  // Show rebuy button on break screen if window is open
+  const rbOpen=isRebuyWindowOpen();
+  document.getElementById('brkRebuyBtn').style.display=rbOpen?'':'none';
+  // Color-up message
+  const cuAlerts=document.getElementById('brkColorUpAlert');
+  const cuBox=document.getElementById('colorUpAlerts');
+  cuAlerts.textContent=cuBox&&cuBox.textContent.trim()?'⬆️ '+cuBox.textContent.trim():'';
+}
+function brkTick(){if(S.brkSec<=0){clearInterval(S.brkInterval);skipBreak();return;}S.brkSec--;updBrkDisp();}
+function updBrkDisp(){document.getElementById('brkTimer').textContent=ft(S.brkSec);}
+function skipBreak(){
+  clearInterval(S.brkInterval);S.onBreak=false;
+  document.getElementById('brkOverlay').classList.add('hidden');
+  nextLevel();
+}
+
+// ── MODALS ───────────────────────────────────────────────
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');}
+function showModal(html){document.getElementById('modalContent').innerHTML=html;document.getElementById('modalOverlay').classList.remove('hidden');}
+
+function confirmEnd(){
+  const alreadyRecorded=new Set(S.finishOrder.map(f=>f.name));
+  const stillActive=S.players.filter(p=>!p.busted&&!alreadyRecorded.has(p.name));
+
+  if(stillActive.length<=1){
+    // 0 or 1 player left — no ranking needed
+    showModal(`
+      <div class="modal-title">End Tournament?</div>
+      <p style="color:var(--text-dim);font-size:15px;margin-bottom:4px;">This will finalize results and show the standings.</p>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="closeModal();endTournamentWithResults([])">Yes, End Tournament</button>
+      </div>`);
+  } else {
+    // Store names globally to avoid quote-escaping issues in onclick
+    window._earlyEndNames = stillActive.map(p=>p.name);
+    showModal(`
+      <div class="modal-title">Rank Remaining Players</div>
+      <div style="color:var(--text-dim);font-size:13px;margin-bottom:14px;">Set the finishing order for players still in the game.</div>
+      ${stillActive.map((p,i)=>`
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid var(--border);">
+          <div style="flex:1;font-weight:600;font-size:15px;">${p.name}</div>
+          <select id="rank_${i}" style="max-width:90px;">
+            ${stillActive.map((_,j)=>`<option value="${j+1}" ${j===i?'selected':''}>${ord(j+1)}</option>`).join('')}
+          </select>
+        </div>`).join('')}
+      <div id="rankError" style="color:#e74c3c;font-size:12px;margin-top:4px;display:none;">Each place must be unique.</div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="submitEarlyEnd()">Finalize &amp; End</button>
+      </div>`);
+  }
+}
+
+function submitEarlyEnd(){
+  const names=window._earlyEndNames||[];
+  const placements=names.map((name,i)=>({name, place:parseInt(document.getElementById('rank_'+i).value)}));
+  // Validate — all places must be unique
+  const places=placements.map(p=>p.place);
+  const unique=new Set(places);
+  if(unique.size!==places.length){
+    document.getElementById('rankError').style.display='';
+    return;
+  }
+  closeModal();
+  endTournamentWithResults(placements);
+}
+
+function endTournamentWithResults(earlyPlacements){
+  clearInterval(S.timerInterval);S.running=false;
+  document.getElementById('brkOverlay').classList.add('hidden');
+  const pot=(S.players.length+S.totalRebuys)*S.settings.buyinAmount;
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+
+  // Add early-end ranked players to finishOrder
+  const alreadyRecorded=new Set(S.finishOrder.map(f=>f.name));
+  if(earlyPlacements&&earlyPlacements.length>0){
+    earlyPlacements.forEach(p=>S.finishOrder.push({name:p.name, place:p.place}));
+  } else {
+    // Single remaining player wins
+    const lastActive=S.players.find(p=>!p.busted&&!alreadyRecorded.has(p.name));
+    if(lastActive)S.finishOrder.push({name:lastActive.name, place:1});
+  }
+
+  const winner=S.finishOrder.find(f=>f.place===1);
+  document.getElementById('resultsWinner').textContent=winner?'🏆 '+winner.name+' Wins! 🏆':'🏆 Tournament Complete';
+  document.getElementById('finalStandings').innerHTML=buildStandingsRows(S.finishOrder,S.players,pot,pcts,paidPos,true);
+  document.getElementById('rPlayers').textContent=S.players.length;
+  document.getElementById('rPot').textContent='$'+pot.toLocaleString();
+  document.getElementById('rRebuys').textContent=S.totalRebuys;
+  document.getElementById('rLevels').textContent=S.level+1;
+  document.getElementById('rLevelsLbl').textContent='Rounds Played';
+  showScreen('results');
+}
+
+function showTModal(type){
+  if(type==='players'){
+    showModal(`<div class="modal-title">Player Stacks</div>
+      ${S.players.map((p,i)=>`
+        <div class="player-entry" style="${p.busted?'opacity:.4':''}">
+          <div class="player-name-text">${p.name}</div>
+          ${p.busted?'<span class="out-badge">Out</span>'
+            :`<input type="number" value="${p.chips}" step="100" style="max-width:120px;" onchange="S.players[${i}].chips=parseInt(this.value)||0;">`}
+        </div>`).join('')}
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Done</button></div>`);
+  }else if(type==='blinds'){
+    const rows=S.blinds.map((b,i)=>`<tr${i===S.level?' class="cur"':''}><td style="color:var(--gold-dark);font-family:'Share Tech Mono',monospace;">${i+1}${b.break?' 🔔':''}</td><td>${fn(b.sb)}</td><td>${fn(b.bb)}</td><td>${b.ante>0?fn(b.ante):'—'}</td><td>${b.min}m</td></tr>`).join('');
+    showModal(`<div class="modal-title">Blind Structure</div>
+      <div style="max-height:400px;overflow-y:auto;"><table class="blind-table"><thead><tr><th>Rnd</th><th>SB</th><th>BB</th><th>Ante</th><th>Time</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>`);
+  }else if(type==='settings'){
+    const s=S.settings;
+    showModal(`<div class="modal-title">⚙️ Settings</div>
+      <div class="toggle-row" style="margin-bottom:14px;">
+        <span class="toggle-label">Sound Alerts</span>
+        <label class="slider"><input type="checkbox" id="tSoundEnabled" ${s.sound?'checked':''} onchange="S.settings.sound=this.checked;"><span class="slider-track"></span></label>
+      </div>
+      <div class="toggle-row" style="margin-bottom:14px;">
+        <span class="toggle-label">Auto-advance Rounds</span>
+        <label class="slider"><input type="checkbox" id="tAutoAdvance" ${s.autoAdv?'checked':''} onchange="S.settings.autoAdv=this.checked;"><span class="slider-track"></span></label>
+      </div>
+      <div class="field"><label>Break Duration (minutes)</label>
+        <input type="number" value="${s.brkDur}" min="1" max="60" onchange="S.settings.brkDur=parseInt(this.value)||10;">
+      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Done</button></div>`);
+  }else{showResultsModal();}
+}
+
+function showRebuyModal(){
+  if(!isRebuyWindowOpen()){
+    showToast(`Rebuys closed after Round ${S.settings.rebuyCutoff||3}`);return;
+  }
+  const elig=rebuyEligible();
+  if(!elig.length){showToast('No players eligible for rebuy');return;}
+  const limitTxt=S.settings.limitRebuys?` of ${S.settings.maxRebuys} used`:'';
+  showModal(`<div class="modal-title">💰 Rebuy / Add-on</div>
+    <div class="field"><label>Player</label>
+      <select id="rbPlayer">${elig.map(p=>`<option value="${S.players.indexOf(p)}">${p.name} (${p.rebuys}${limitTxt})</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Chips Added</label><input type="number" id="rbChips" value="${S.settings.rebuyChips}" step="100" min="100"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="doRebuy()">Confirm — $${S.settings.buyinAmount}</button>
+    </div>`);
+}
+function doRebuy(){
+  const i=parseInt(document.getElementById('rbPlayer').value);
+  const chips=parseInt(document.getElementById('rbChips').value)||S.settings.rebuyChips;
+  S.players[i].chips+=chips;S.players[i].rebuys++;S.totalRebuys++;
+  closeModal();renderAll();
+  showToast(S.players[i].name+' rebuys! +'+fn(chips));
+}
+
+function showEliminateModal(){
+  const active=S.players.filter(p=>!p.busted);
+  if(!active.length){showToast('No active players');return;}
+  showModal(`<div class="modal-title">💀 Bust Out</div>
+    <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Check all players eliminated on this hand. Multiple = tie, prize split equally.</div>
+    <div id="bustList">
+      ${active.map(p=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <input type="checkbox" id="bust_${S.players.indexOf(p)}" value="${S.players.indexOf(p)}"
+            style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;">
+          <label for="bust_${S.players.indexOf(p)}" style="font-size:15px;font-weight:600;cursor:pointer;margin:0;color:var(--text);text-transform:none;letter-spacing:0;">${p.name}</label>
+        </div>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="doEliminate()">Bust Out</button>
+    </div>`);
+}
+
+function doEliminate(){
+  const checked=Array.from(document.querySelectorAll('#bustList input[type=checkbox]:checked'));
+  if(!checked.length){showToast('Select at least one player');return;}
+  const indices=checked.map(c=>parseInt(c.value));
+  // Mark all selected as busted
+  indices.forEach(i=>S.players[i].busted=true);
+  const remaining=S.players.filter(p=>!p.busted).length;
+  // All busted this hand share the same place (tie)
+  const place=remaining+1;
+  indices.forEach(i=>S.finishOrder.push({name:S.players[i].name, place, tied:indices.length>1}));
+  closeModal();renderAll();
+  if(indices.length>1){
+    const names=indices.map(i=>S.players[i].name).join(' & ');
+    showToast(`💀 ${names} — tie ${ord(place)}`);
+  }else{
+    showToast('💀 '+S.players[indices[0]].name+' — '+ord(place)+' place');
+  }
+  if(remaining===1){
+    const winner=S.players.find(p=>!p.busted);
+    if(winner)S.finishOrder.push({name:winner.name,place:1});
+    setTimeout(()=>endTournamentWithResults([]),1400);
+  }
+  if(remaining===0){
+    setTimeout(()=>endTournamentWithResults([]),1400);
+  }
+}
+
+function buildStandingsRows(finishOrder, players, pot, pcts, paidPos, forResults){
+  const pays=pcts.map(p=>Math.round(pot*p/100));
+
+  // Ties: total the prize money for all tied spots, divide evenly
+  // e.g. 2 players tie for 2nd: 2nd=$150 + 3rd=$100 = $250 total → $125 each
+  function payForPlace(place, count){
+    if(place>paidPos||count===0)return 0;
+    let total=0;
+    for(let i=0;i<count;i++){
+      if(place+i<=paidPos)total+=(pays[place+i-1]||0);
+    }
+    return Math.round(total/count);
+  }
+
+  // Group finishOrder by place
+  const byPlace={};
+  finishOrder.forEach(f=>{
+    if(!byPlace[f.place])byPlace[f.place]=[];
+    byPlace[f.place].push(f.name);
+  });
+
+  const totalPlayers=players.length;
+  const rows=[];
+
+  // 1st place on top, last place at bottom
+  for(let place=1;place<=totalPlayers;place++){
+    const group=byPlace[place];
+    const cls=place===1?'fp-gold':place===2?'fp-silver':place===3?'fp-bronze':'';
+    if(group&&group.length>0){
+      const pay=payForPlace(place,group.length);
+      const tieLabel=group.length>1?` <span style="font-size:11px;color:var(--gold-dark);font-weight:600;letter-spacing:0.5px;">TIE</span>`:'';
+      group.forEach(name=>{
+        rows.push(`<div class="finish-item">
+          <div class="finish-place ${cls}">${ord(place)}</div>
+          <div style="flex:1;font-weight:600;${forResults?'font-size:16px;':''}">${name}${tieLabel}</div>
+          ${pay?`<div class="finish-pay">$${pay.toLocaleString()}</div>`:''}
+        </div>`);
+      });
+      // Skip ahead if this was a tie (those places are consumed)
+      // The loop variable will naturally advance, but tied players consumed extra places
+      // We need to skip the consumed spots
+      place+=group.length-1;
+    }else{
+      // TBD — active player slot
+      const activePlayers=players.filter(pl=>!pl.busted&&!finishOrder.find(f=>f.name===pl.name));
+      if(activePlayers.length>0){
+        const pay=place<=paidPos?(pays[place-1]||0):0;
+        rows.push(`<div class="finish-item" style="opacity:0.38;">
+          <div class="finish-place">${ord(place)}</div>
+          <div style="flex:1;font-weight:600;color:var(--text-dim);">—</div>
+          ${pay?`<div class="finish-pay" style="color:var(--text-dim);">$${pay.toLocaleString()}</div>`:''}
+        </div>`);
+      }
+    }
+  }
+  return rows.join('');
+}
+
+function showResultsModal(){
+  const pot=(S.players.length+S.totalRebuys)*S.settings.buyinAmount;
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+  const rows=buildStandingsRows(S.finishOrder,S.players,pot,pcts,paidPos,false);
+  showModal(`<div class="modal-title">🏆 Standings</div>
+    <div style="max-height:440px;overflow-y:auto;">${rows||'<div style="color:var(--text-dim)">No eliminations yet.</div>'}</div>
+    <div style="text-align:center;margin-top:10px;color:var(--text-dim);font-size:13px;">Pot: <span style="color:var(--gold)">$${pot.toLocaleString()}</span></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>`);
+}
+
+function newTournament(){
+  showScreen('setup');
+  S.players.forEach(p=>{p.busted=false;p.rebuys=0;p.chips=S.settings.startingChips||1000;});
+  renderPlayerList();
+}
+
+// ── SCREEN ───────────────────────────────────────────────
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');}
+
+// ── SOUND ────────────────────────────────────────────────
+let actx=null;
+function getActx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+function playSound(type){
+  if(!S.settings?.sound)return;
+  try{
+    const ctx=getActx();
+    const tone=(freq,t,dur,vol=0.2,wave='sine')=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=wave;o.connect(g);g.connect(ctx.destination);
+      o.frequency.setValueAtTime(freq,ctx.currentTime+t);
+      g.gain.setValueAtTime(vol,ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+dur);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+dur+0.05);
+    };
+    if(type==='beep')tone(1000,0,0.07,0.12,'square');
+    else if(type==='warn'){tone(660,0,0.18,0.2);tone(880,0.22,0.18,0.2);}
+    else if(type==='level'){tone(523,0,0.22,0.28);tone(659,0.27,0.22,0.28);tone(784,0.54,0.45,0.28);}
+    else if(type==='brk'){tone(784,0,0.28,0.22);tone(659,0.33,0.28,0.22);tone(523,0.66,0.55,0.22);}
+  }catch(e){}
+}
+
+// ── HELPERS ──────────────────────────────────────────────
+function ft(s){const m=Math.floor(s/60);return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function fn(v){if(v===undefined||v===null)return'—';if(v>=1000000)return(v/1000000).toFixed(1).replace(/\.0$/,'')+'M';if(v>=1000)return(v/1000).toFixed(0)+'K';return String(v);}
+function ord(v){const s=['th','st','nd','rd'],x=v%100;return v+(s[(x-20)%10]||s[x]||s[0]);}
+function darken(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${Math.round(r*.45)},${Math.round(g*.45)},${Math.round(b*.45)},.9)`;}
+let toastTO;
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTO);toastTO=setTimeout(()=>el.classList.remove('show'),3200);}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+async function wakelock(){try{if('wakeLock'in navigator)await navigator.wakeLock.request('screen');}catch(e){}}
+wakelock();
+</script>
+</body>
+</html>
