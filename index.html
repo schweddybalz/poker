@@ -211,6 +211,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="setupTab('players',this)">Players</button>
       <button class="nav-tab" onclick="setupTab('blinds',this)">Blinds</button>
+      <button class="nav-tab" onclick="setupTab('rankings',this)">Rankings</button>
       <button class="nav-tab" onclick="setupTab('chips',this)">Chips</button>
       <button class="nav-tab" onclick="setupTab('settings',this)">Settings</button>
     </div>
@@ -354,6 +355,54 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(201,168,76,0.2);display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Total per player</span>
           <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--gold);letter-spacing:2px;">T1,000</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-rankings" style="display:none">
+      <div class="card">
+        <div class="card-title">🏆 Hand Rankings</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid #FFD700;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#FFD700;width:28px;text-align:center;flex-shrink:0;">1</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#FFD700;letter-spacing:1px;">Royal Flush</div><div style="font-size:13px;color:var(--text-dim);">A K Q J 10 — same suit</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">2</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Straight Flush</div><div style="font-size:13px;color:var(--text-dim);">5 in sequence — same suit</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">3</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Four of a Kind</div><div style="font-size:13px;color:var(--text-dim);">4 cards same rank</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">4</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Full House</div><div style="font-size:13px;color:var(--text-dim);">3 of a kind + a pair</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">5</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Flush</div><div style="font-size:13px;color:var(--text-dim);">5 cards — same suit, any order</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">6</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Straight</div><div style="font-size:13px;color:var(--text-dim);">5 in sequence — any suit</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">7</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">Three of a Kind</div><div style="font-size:13px;color:var(--text-dim);">3 cards same rank</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">8</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">Two Pair</div><div style="font-size:13px;color:var(--text-dim);">2 different pairs</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">9</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">One Pair</div><div style="font-size:13px;color:var(--text-dim);">2 cards same rank</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">10</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">High Card</div><div style="font-size:13px;color:var(--text-dim);">Highest card plays</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -586,7 +635,7 @@ function resumeTournament(){
 function setupTab(tab,btn){
   document.querySelectorAll('#screen-setup .nav-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  ['players','blinds','chips','settings'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+  ['players','blinds','rankings','chips','settings'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
   if(tab==='blinds')renderBlindTable();
   if(tab==='chips')renderChipEditor();
 }
