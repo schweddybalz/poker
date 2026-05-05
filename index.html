@@ -11,20 +11,20 @@
 <style>
 :root{--felt:#0a2e1a;--gold:#c9a84c;--gold-light:#e8c96a;--gold-dark:#8b6914;--text:#f0ece4;--text-dim:#a09070;--border:rgba(201,168,76,0.3);--panel:rgba(0,0,0,0.42);--radius:12px;--glow:0 0 20px rgba(201,168,76,0.18);
   --fz-timer:clamp(214px,52.9vw,272px);
-  --fz-blind-lbl:32px;
-  --fz-blind-val:clamp(120px,28.7vw,144px);
-  --fz-next-lbl:32px;
-  --fz-next:clamp(48px,10.9vw,58px);
-  --fz-round-lbl:42px;
+  --fz-blind-lbl:37px;
+  --fz-blind-val:clamp(58px,13.2vw,82px);
+  --fz-next-lbl:37px;
+  --fz-next:clamp(40px,8.9vw,50px);
+  --fz-round-lbl:61px;
   --fz-chip-size:clamp(88px,16.4vw,108px);
   --fz-chip-num:clamp(48px,11.7vw,54px);
   --fz-btn-t:72px;
   --fz-btn-t-pp:94px;
-  --fz-pool-title:32px;
-  --fz-pool-total:56px;
-  --fz-pool-sub:24px;
+  --fz-pool-title:43px;
+  --fz-pool-total:66px;
+  --fz-pool-sub:23px;
   --fz-pool-stat-val:32px;
-  --fz-pool-stat-lbl:24px;
+  --fz-pool-stat-lbl:18px;
   --fz-pool-payout-lbl:32px;
   --fz-pool-payout-amt:32px;
 }
@@ -108,10 +108,10 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 
 /* BLINDS — left column, stacked vertically */
 .blinds-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;box-shadow:var(--glow);display:flex;flex-direction:column;gap:8px;flex:1;}
-.b-item{text-align:center;background:rgba(0,0,0,0.32);border-radius:10px;padding:12px 8px;border:1px solid rgba(201,168,76,0.18);flex:1;}
+.b-item{text-align:center;background:rgba(0,0,0,0.32);border-radius:10px;padding:12px 8px;border:1px solid rgba(201,168,76,0.18);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .b-label{font-size:var(--fz-blind-lbl);font-weight:700;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:5px;}
 .b-val{font-family:'Share Tech Mono',monospace;font-size:var(--fz-blind-val);color:var(--gold);line-height:1;}
-.next-box{background:rgba(0,0,0,0.22);border:1px solid rgba(201,168,76,0.13);border-radius:8px;padding:10px 10px;text-align:center;}
+.next-box{background:rgba(0,0,0,0.32);border:1px solid rgba(201,168,76,0.18);border-radius:10px;padding:12px 8px;text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .next-lbl{font-size:var(--fz-next-lbl);font-weight:700;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
 .next-val{font-family:'Share Tech Mono',monospace;font-size:var(--fz-next);color:var(--gold-dark);display:flex;flex-direction:column;align-items:center;gap:2px;}
 
@@ -517,7 +517,7 @@ function defaultChips(){
     {value:25,  color:'#27ae60',text:'#fff',startCount:16},
     {value:100, color:'#2c2c2c',text:'#fff',startCount:5},
     {value:500, color:'#8e44ad',text:'#fff',startCount:0},
-    {value:1000,color:'#c8b400',text:'#333',startCount:0},
+    {value:1000,color:'#c8b400',text:'#fff',startCount:0},
   ];
 }
 function makeSchedule(min){
@@ -790,7 +790,7 @@ function updateTimerDisp(){
   const fill=document.getElementById('lvlBarFill');
   if(fill&&S.levelTotalSec>0)fill.style.width=((S.levelTotalSec-S.timerSec)/S.levelTotalSec*100)+'%';
   const badge=document.getElementById('lvlBadge');
-  if(badge){const l=S.blinds[S.level];badge.textContent='ROUND '+(S.level+1)+(l&&l.break?' 🔔':'');}
+  if(badge){const l=S.blinds[S.level];badge.innerHTML='ROUND '+(S.level+1)+(l&&l.break?' <span style="font-size:0.65em;vertical-align:middle;">🔔</span>':'');}
 }
 
 // ── BLINDS DISPLAY ───────────────────────────────────────
@@ -812,7 +812,7 @@ function updateBlindsDisp(){
     else if(nxt.ante>0){
       nb.innerHTML=`<span>${fmtBlind(nxt.sb)}</span><span>${fmtBlind(nxt.bb)}</span><span style="font-size:0.6em;color:var(--text-dim);">${fmtBlind(nxt.ante)} ante</span>`;
     }else{
-      nb.innerHTML=`<span>${fmtBlind(nxt.sb)}</span><span>${fmtBlind(nxt.bb)}</span>`;
+      nb.innerHTML=`<span>${fmtBlind(nxt.sb)}</span><span style="width:85%;height:1px;background:rgba(201,168,76,0.25);display:block;margin:2px auto;"></span><span>${fmtBlind(nxt.bb)}</span>`;
     }
   }
 }
