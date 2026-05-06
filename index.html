@@ -78,6 +78,14 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 .prize-row{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
 .prize-row label{min-width:65px;margin:0;}
 .scrollable{max-height:260px;overflow-y:auto;}
+/* ROUND DOTS */
+.round-dots{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px 12px;flex-wrap:nowrap;}
+.rdot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0;transition:all .3s;cursor:default;}
+.rdot.done{background:var(--gold-dark);color:#0a2e1a;}
+.rdot.current{background:var(--gold);color:#0a2e1a;box-shadow:0 0 14px rgba(201,168,76,0.7);width:38px;height:38px;font-size:12px;}
+.rdot.upcoming{background:transparent;border:2px solid rgba(201,168,76,0.2);color:rgba(201,168,76,0.25);}
+.rdot.upcoming.brk{border-color:rgba(201,168,76,0.45);}
+
 ::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--gold-dark);border-radius:3px;}
 
 /* ===== TOURNAMENT ===== */
@@ -194,7 +202,8 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
   <div class="timer-display brk" id="brkTimer" style="font-size:70px;">10:00</div>
   <div id="brkColorUpAlert" style="display:none;color:var(--gold-light);font-size:16px;font-weight:700;letter-spacing:1px;text-align:center;padding:0 20px;"></div>
   <div class="brk-actions">
-    <button class="btn" id="brkRebuyBtn" onclick="showRebuyModal()" style="display:none;">💰 Rebuy / Add-on</button>
+    <button class="btn" id="brkRebuyBtn" onclick="showRebuyModal()" style="display:none;">💰 Rebuy</button>
+    <button class="btn" id="brkAddonBtn" onclick="showAddonModal()" style="display:none;background:rgba(201,168,76,0.15);border-color:var(--gold-dark);color:var(--gold);">➕ Add-on</button>
     <button class="btn-outline" onclick="skipBreak()">Skip Break →</button>
   </div>
 </div>
@@ -234,10 +243,10 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
           <div class="card">
             <div class="card-title">💰 Buy-in</div>
             <div class="field-row" style="grid-template-columns:1fr 1fr;">
-              <div class="field"><label>Buy-in ($)</label><input type="number" id="buyinAmount" value="20" min="1"></div>
+              <div class="field"><label>Buy-in ($)</label><input type="number" id="buyinAmount" value="20" min="1" onchange="updateBountyDefault()"></div>
               <div class="field"><label>Starting Chips</label><input type="number" id="startingChips" value="1000" min="100" step="100"></div>
             </div>
-            <div class="toggle-row">
+            <div class="toggle-row" style="margin-bottom:8px;">
               <span class="toggle-label">Rebuys?</span>
               <label class="slider">
                 <input type="checkbox" id="rebuySlider" checked onchange="setRebuyToggle(this.checked)">
@@ -255,6 +264,19 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
                 <div class="field"><label>Max / Player</label><input type="number" id="maxRebuys" value="2" min="1" max="10"></div>
               </div>
               <div class="field"><label>Rebuy Cutoff (after Round)</label><input type="number" id="rebuyCutoff" value="3" min="1"></div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
+              <div class="toggle-row" style="margin-bottom:8px;">
+                <span class="toggle-label">Bounties?</span>
+                <label class="slider"><input type="checkbox" id="bountySlider" onchange="setBountyToggle(this.checked)"><span class="slider-track"></span></label>
+              </div>
+              <div id="bountyOpts" style="display:none;">
+                <div class="field"><label>Bounty Amount ($)</label><input type="number" id="bountyAmount" value="10" min="1"></div>
+                <div class="toggle-row" style="margin-top:8px;">
+                  <span class="toggle-label">Progressive Knockout (PKO)?</span>
+                  <label class="slider"><input type="checkbox" id="pkoSlider" onchange="setPKOToggle(this.checked)"><span class="slider-track"></span></label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -362,47 +384,141 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
     <div id="tab-rankings" style="display:none">
       <div class="card">
         <div class="card-title">🏆 Hand Rankings</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid #FFD700;">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#FFD700;width:28px;text-align:center;flex-shrink:0;">1</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#FFD700;letter-spacing:1px;">Royal Flush</div><div style="font-size:13px;color:var(--text-dim);">A K Q J 10 — same suit</div></div>
+        <style>
+          .hand-row{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:rgba(0,0,0,0.28);}
+          .hand-rank{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#8b6914;width:24px;text-align:center;flex-shrink:0;}
+          .hand-info{flex:1;min-width:0;}
+          .hand-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;line-height:1;}
+          .hand-desc{font-size:13px;color:var(--text-dim);margin-top:1px;}
+          .cards{display:flex;gap:3px;flex-shrink:0;}
+          .pc{width:30px;height:42px;border-radius:4px;background:#f5f0e8;border:1px solid #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+          .pc .r{font-size:12px;font-weight:900;line-height:1.1;}
+          .pc .s{font-size:14px;line-height:1;}
+          .pr{color:#c0392b;}.pb{color:#1a1a1a;}
+          .pc.hi{background:#fffde7;border-color:#c9a84c;}
+        </style>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+
+          <div class="hand-row" style="border-left:3px solid #FFD700;">
+            <div class="hand-rank" style="color:#FFD700;">1</div>
+            <div class="hand-info"><div class="hand-name" style="color:#FFD700;">Royal Flush</div><div class="hand-desc">A K Q J 10 — same suit</div></div>
+            <div class="cards">
+              <div class="pc hi"><div class="r pr">A</div><div class="s pr">♥</div></div>
+              <div class="pc hi"><div class="r pr">K</div><div class="s pr">♥</div></div>
+              <div class="pc hi"><div class="r pr">Q</div><div class="s pr">♥</div></div>
+              <div class="pc hi"><div class="r pr">J</div><div class="s pr">♥</div></div>
+              <div class="pc hi"><div class="r pr">10</div><div class="s pr">♥</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">2</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Straight Flush</div><div style="font-size:13px;color:var(--text-dim);">5 in sequence — same suit</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #c9a84c;">
+            <div class="hand-rank">2</div>
+            <div class="hand-info"><div class="hand-name" style="color:#c9a84c;">Straight Flush</div><div class="hand-desc">5 in sequence — same suit</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pb">9</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pb">8</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pb">7</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pb">6</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pb">5</div><div class="s pb">♠</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">3</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Four of a Kind</div><div style="font-size:13px;color:var(--text-dim);">4 cards same rank</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #c9a84c;">
+            <div class="hand-rank">3</div>
+            <div class="hand-info"><div class="hand-name" style="color:#c9a84c;">Four of a Kind</div><div class="hand-desc">4 cards same rank</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pb">K</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">K</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pr">K</div><div class="s pr">♥</div></div>
+              <div class="pc"><div class="r pb">K</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pr">3</div><div class="s pr">♥</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">4</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Full House</div><div style="font-size:13px;color:var(--text-dim);">3 of a kind + a pair</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #c9a84c;">
+            <div class="hand-rank">4</div>
+            <div class="hand-info"><div class="hand-name" style="color:#c9a84c;">Full House</div><div class="hand-desc">Three of a kind + a pair</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pb">J</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">J</div><div class="s pr">♥</div></div>
+              <div class="pc"><div class="r pb">J</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pr">8</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pb">8</div><div class="s pb">♣</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">5</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Flush</div><div style="font-size:13px;color:var(--text-dim);">5 cards — same suit, any order</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #c9a84c;">
+            <div class="hand-rank">5</div>
+            <div class="hand-info"><div class="hand-name" style="color:#c9a84c;">Flush</div><div class="hand-desc">5 cards — same suit, any order</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pr">A</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pr">J</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pr">8</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pr">5</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pr">2</div><div class="s pr">♦</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--gold);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:28px;text-align:center;flex-shrink:0;">6</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px;">Straight</div><div style="font-size:13px;color:var(--text-dim);">5 in sequence — any suit</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #c9a84c;">
+            <div class="hand-rank">6</div>
+            <div class="hand-info"><div class="hand-name" style="color:#c9a84c;">Straight</div><div class="hand-desc">5 in sequence — any suit</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pr">9</div><div class="s pr">♥</div></div>
+              <div class="pc"><div class="r pb">8</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pr">7</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pb">6</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">5</div><div class="s pr">♥</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">7</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">Three of a Kind</div><div style="font-size:13px;color:var(--text-dim);">3 cards same rank</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #a09070;">
+            <div class="hand-rank">7</div>
+            <div class="hand-info"><div class="hand-name" style="color:#a09070;">Three of a Kind</div><div class="hand-desc">3 cards same rank</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pb">7</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">7</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pb">7</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pr">Q</div><div class="s pr">♥</div></div>
+              <div class="pc"><div class="r pb">4</div><div class="s pb">♣</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">8</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">Two Pair</div><div style="font-size:13px;color:var(--text-dim);">2 different pairs</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #a09070;">
+            <div class="hand-rank">8</div>
+            <div class="hand-info"><div class="hand-name" style="color:#a09070;">Two Pair</div><div class="hand-desc">2 different pairs</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pb">A</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pr">A</div><div class="s pr">♥</div></div>
+              <div class="pc"><div class="r pb">6</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">6</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pb">K</div><div class="s pb">♠</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">9</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">One Pair</div><div style="font-size:13px;color:var(--text-dim);">2 cards same rank</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #a09070;">
+            <div class="hand-rank">9</div>
+            <div class="hand-info"><div class="hand-name" style="color:#a09070;">One Pair</div><div class="hand-desc">2 cards same rank</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pr">Q</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pb">Q</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pb">A</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pb">9</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">3</div><div class="s pr">♥</div></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,0.28);border-radius:8px;border-left:3px solid var(--text-dim);">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text-dim);width:28px;text-align:center;flex-shrink:0;">10</div>
-            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text-dim);letter-spacing:1px;">High Card</div><div style="font-size:13px;color:var(--text-dim);">Highest card plays</div></div>
+
+          <div class="hand-row" style="border-left:3px solid #a09070;">
+            <div class="hand-rank">10</div>
+            <div class="hand-info"><div class="hand-name" style="color:#a09070;">High Card</div><div class="hand-desc">Highest card plays</div></div>
+            <div class="cards">
+              <div class="pc"><div class="r pb">A</div><div class="s pb">♣</div></div>
+              <div class="pc"><div class="r pr">J</div><div class="s pr">♥</div></div>
+              <div class="pc"><div class="r pb">8</div><div class="s pb">♠</div></div>
+              <div class="pc"><div class="r pr">5</div><div class="s pr">♦</div></div>
+              <div class="pc"><div class="r pb">2</div><div class="s pb">♣</div></div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -509,13 +625,27 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
           </div>
         </div>
         <div id="payoutTable" style="padding-top:10px;border-top:1px solid var(--border);"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
-          <button class="btn" id="rbBtn" onclick="showRebuyModal()" style="width:100%;text-align:center;">Rebuy</button>
-          <button class="btn btn-danger" onclick="showEliminateModal()" style="width:100%;text-align:center;">Bust Out</button>
+        <div id="actionButtons" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+          <button class="btn" id="rbBtn" onclick="showRebuyModal()" style="width:100%;text-align:center;display:none;">Rebuy</button>
+          <button class="btn btn-sm" id="addonBtn" onclick="showAddonModal()" style="width:100%;text-align:center;display:none;background:rgba(201,168,76,0.15);border-color:var(--gold-dark);color:var(--gold);">Add-on</button>
+          <button class="btn btn-danger" id="bustBtn" onclick="showEliminateModal()" style="width:100%;text-align:center;grid-column:1/-1;">Bust Out</button>
         </div>
       </div>
     </div>
 
+  </div>
+
+  <!-- ROUND PROGRESS DOTS -->
+  <div class="card" style="margin:0 12px 0;padding:6px 12px;">
+    <div class="round-dots" id="roundDots"></div>
+  </div>
+
+  <!-- PKO BOUNTY BOARD — only shown in PKO mode -->
+  <div id="bountyBoard" style="display:none;margin:8px 12px 0;">
+    <div class="card" style="padding:10px 14px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--gold-dark);letter-spacing:2px;margin-bottom:8px;">💀 Bounties</div>
+      <div id="bountyBoardInner" style="display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;"></div>
+    </div>
   </div>
 
   <!-- DEBUG FONT PANEL — full width below all three columns, hidden by default -->
@@ -556,6 +686,7 @@ const S={
   totalRebuys:0,finishOrder:[],
   timerInterval:null,brkSec:0,brkInterval:null,
   dismissedColorUps:{},
+  bountyEarnings:{}, // playerName -> total bounty $ earned
 };
 let allowRebuys=true;
 
@@ -624,11 +755,31 @@ function resumeTournament(){
   document.getElementById('resumeBanner').style.display='none';
   showScreen('tournament');
   document.getElementById('tName').textContent='🃏 '+S.settings.name;
-  document.getElementById('rbBtn').style.display=S.settings.allowRebuys?'':'none';
   updatePPBtn();
   renderAll();
   buildDebugPanel();
   showToast('✅ Tournament resumed');
+}
+
+function updateBountyDefault(){
+  const buyin=parseInt(document.getElementById('buyinAmount').value)||20;
+  const bountyEl=document.getElementById('bountyAmount');
+  if(bountyEl)bountyEl.value=Math.round(buyin*0.5);
+}
+function setBountyToggle(on){
+  document.getElementById('bountyOpts').style.display=on?'':'none';
+  if(on)updateBountyDefault();
+}
+function setPKOToggle(on){
+  // When PKO is toggled, update prize split defaults
+  const prizeInputs=document.querySelectorAll('.prize-pct-input');
+  if(prizeInputs.length>=3){
+    if(on){
+      prizeInputs[0].value=37.5;prizeInputs[1].value=37.5;prizeInputs[2].value=25;
+    }else{
+      prizeInputs[0].value=50;prizeInputs[1].value=30;prizeInputs[2].value=20;
+    }
+  }
 }
 
 // ── SETUP TABS ───────────────────────────────────────────
@@ -737,7 +888,7 @@ function renderPrizeRows(){
   el.innerHTML=Array.from({length:num},(_,i)=>`
     <div class="prize-row">
       <label>${ord(i+1)} Place</label>
-      <input type="number" class="pct" value="${existing[i]??defs[i]??0}" min="0" max="100" step="1" style="max-width:80px;" onchange="chkPrize()">
+      <input type="number" class="pct prize-pct-input" value="${existing[i]??defs[i]??0}" min="0" max="100" step="1" style="max-width:80px;" onchange="chkPrize()">
       <span style="color:var(--text-dim);font-size:13px;">%</span>
     </div>`).join('');
 }
@@ -751,6 +902,8 @@ function getPcts(){return Array.from(document.querySelectorAll('.pct')).map(i=>p
 function startTournament(){
   if(S.players.length<2){showToast('Need at least 2 players');return;}
   if(!S.blinds.length){showToast('Add at least one blind level');return;}
+  const bountyOn=document.getElementById('bountySlider')?.checked??false;
+  const pkoOn=bountyOn&&(document.getElementById('pkoSlider')?.checked??false);
   S.settings={
     buyinAmount:parseInt(document.getElementById('buyinAmount').value)||50,
     startingChips:parseInt(document.getElementById('startingChips').value)||1000,
@@ -766,18 +919,23 @@ function startTournament(){
     brkDur:parseInt(document.getElementById('breakDuration').value)||10,
     pcts:getPcts(),
     paidPos:parseInt(document.getElementById('paidPositions').value)||3,
+    bountyOn,pkoOn,
+    bountyAmount:bountyOn?(parseInt(document.getElementById('bountyAmount').value)||10):0,
   };
   // randomize seating
   const idx=S.players.map((_,i)=>i);
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   S.seatingOrder=idx;
-  S.players.forEach(p=>{p.busted=false;p.rebuys=0;p.chips=S.settings.startingChips;});
+  S.players.forEach(p=>{
+    p.busted=false;p.rebuys=0;p.chips=S.settings.startingChips;
+    p.bounty=S.settings.bountyAmount; // each player starts with their bounty on their head
+  });
   S.level=0;S.totalRebuys=0;S.finishOrder=[];S.running=false;S.onBreak=false;
-  S.dismissedColorUps={};
+  S.dismissedColorUps={};S.bountyEarnings={};
   loadLevel(0);
   showScreen('tournament');
   document.getElementById('tName').textContent='🃏 '+S.settings.name;
-  document.getElementById('rbBtn').style.display=allowRebuys?'':'none';
+  document.getElementById('bountyBoard').style.display=S.settings.pkoOn?'':'none';
   renderAll();autoSave();
   buildDebugPanel();
   showToast('🎲 Seats randomized — good luck!');
@@ -942,6 +1100,16 @@ function renderStats(){
       </div>`;
     }).join('');
   }
+
+  // Show/hide rebuy & add-on buttons based on window
+  const windowOpen=isRebuyWindowOpen();
+  const showExtra=windowOpen&&S.settings.allowRebuys;
+  const rbBtn=document.getElementById('rbBtn');
+  const addonBtn=document.getElementById('addonBtn');
+  const actionButtons=document.getElementById('actionButtons');
+  if(rbBtn)rbBtn.style.display=showExtra?'':'none';
+  if(addonBtn)addonBtn.style.display=showExtra?'':'none';
+  if(actionButtons)actionButtons.style.gridTemplateColumns=showExtra?'1fr 1fr':'1fr';
 }
 
 function renderSeatTable(){
@@ -955,9 +1123,45 @@ function renderSeatTable(){
   }).join('');
 }
 
+function renderRoundDots(){
+  const el=document.getElementById('roundDots');if(!el)return;
+  el.innerHTML=S.blinds.map((b,i)=>{
+    const cls=i<S.level?'done':i===S.level?'current':'upcoming';
+    const brkCls=b.break?' brk':'';
+    return `<div class="rdot ${cls}${brkCls}">${i+1}</div>`;
+  }).join('');
+}
+
+function renderBountyBoard(){
+  const board=document.getElementById('bountyBoard');
+  if(!board)return;
+  if(!S.settings?.pkoOn){board.style.display='none';return;}
+  board.style.display='';
+  const inner=document.getElementById('bountyBoardInner');
+  if(!inner)return;
+  // Show all active players sorted by bounty descending
+  const active=S.players.filter(p=>!p.busted).sort((a,b)=>(b.bounty||0)-(a.bounty||0));
+  if(!active.length){inner.innerHTML='';return;}
+  // Group players by bounty amount into columns
+  const byAmount={};
+  active.forEach(p=>{
+    const amt=p.bounty||0;
+    if(!byAmount[amt])byAmount[amt]=[];
+    byAmount[amt].push(p.name);
+  });
+  const amounts=Object.keys(byAmount).map(Number).sort((a,b)=>b-a);
+  inner.innerHTML=amounts.map(amt=>`
+    <div style="flex:1;min-width:0;text-align:center;padding:6px 8px;background:rgba(0,0,0,0.3);border-radius:8px;border:1px solid rgba(201,168,76,0.15);">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:18px;color:#e67e22;font-weight:700;">$${amt}</div>
+      <div style="margin-top:4px;display:flex;flex-direction:column;gap:2px;">
+        ${byAmount[amt].map(n=>`<div style="font-size:13px;font-weight:600;color:var(--text);">${n}</div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
 // ── RENDER ALL ───────────────────────────────────────────
 function renderAll(){
-  renderStats();renderChipStrip();
+  renderStats();renderChipStrip();renderRoundDots();renderBountyBoard();
   updateBlindsDisp();updateTimerDisp();checkColorUp();
 }
 
@@ -979,7 +1183,8 @@ function startBreak(){
   playSound('brk');
   // Show rebuy button on break screen if window is open
   const rbOpen=isRebuyWindowOpen();
-  document.getElementById('brkRebuyBtn').style.display=rbOpen?'':'none';
+  document.getElementById('brkRebuyBtn').style.display=rbOpen&&S.settings.allowRebuys?'':'none';
+  document.getElementById('brkAddonBtn').style.display=rbOpen&&S.settings.allowRebuys?'':'none';
   // Color-up message
   const cuAlerts=document.getElementById('brkColorUpAlert');
   const cuBox=document.getElementById('colorUpAlerts');
@@ -1049,10 +1254,18 @@ function endTournamentWithResults(earlyPlacements){
   const alreadyRecorded=new Set(S.finishOrder.map(f=>f.name));
   if(earlyPlacements&&earlyPlacements.length>0){
     earlyPlacements.forEach(p=>S.finishOrder.push({name:p.name, place:p.place}));
+    // Award bounties to each active player's own bounty (they keep it)
+    if(S.settings.bountyOn){
+      earlyPlacements.forEach(p=>{
+        const player=S.players.find(pl=>pl.name===p.name&&!pl.busted);
+        if(player)S.bountyEarnings[p.name]=(S.bountyEarnings[p.name]||0)+(player.bounty||0);
+      });
+    }
   } else {
-    // Single remaining player wins
     const lastActive=S.players.find(p=>!p.busted&&!alreadyRecorded.has(p.name));
-    if(lastActive)S.finishOrder.push({name:lastActive.name, place:1});
+    if(lastActive){
+      S.finishOrder.push({name:lastActive.name, place:1});
+    }
   }
 
   const winner=S.finishOrder.find(f=>f.place===1);
@@ -1071,13 +1284,14 @@ function showTModal(type){
   if(type==='seating'){
     const rows=S.seatingOrder.map(pi=>{
       const p=S.players[pi];
+      const bountyStr=S.settings.bountyOn?` <span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#e67e22;">$${p.bounty||0}</span>`:'';
       return `<div class="player-entry" style="${p.busted?'opacity:.35':''}">
-        <div class="player-name-text">${p.name}${p.rebuys>0?` <span class="rebuy-badge">R${p.rebuys}</span>`:''}</div>
+        <div class="player-name-text">${p.name}${p.rebuys>0?` <span class="rebuy-badge">R${p.rebuys}</span>`:''}${bountyStr}</div>
         ${p.busted?'<span class="out-badge">Out</span>':'<span style="color:#27ae60;font-weight:700;font-size:13px;">Active</span>'}
       </div>`;
     }).join('');
     showModal(`<div class="modal-title">🪑 Seating Order</div>
-      <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Randomized at tournament start.</div>
+      <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Randomized at tournament start.${S.settings.bountyOn?' Bounty shown in orange.':''}</div>
       <div style="max-height:420px;overflow-y:auto;">${rows}</div>
       <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>`);
   }else if(type==='blinds'){
@@ -1114,65 +1328,187 @@ function showRebuyModal(){
   const elig=rebuyEligible();
   if(!elig.length){showToast('No players eligible for rebuy');return;}
   const limitTxt=S.settings.limitRebuys?` of ${S.settings.maxRebuys} used`:'';
+  const bountyOn=S.settings.bountyOn;
+  // For rebuy, eliminator list is all active players
+  const active=S.players.filter(p=>!p.busted);
   showModal(`<div class="modal-title">💰 Rebuy / Add-on</div>
-    <div class="field"><label>Player</label>
+    <div class="field"><label>Player Rebuying</label>
       <select id="rbPlayer">${elig.map(p=>`<option value="${S.players.indexOf(p)}">${p.name} (${p.rebuys}${limitTxt})</option>`).join('')}</select>
     </div>
     <div class="field"><label>Chips Added</label><input type="number" id="rbChips" value="${S.settings.rebuyChips}" step="100" min="100"></div>
+    ${bountyOn?`
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Who knocked them out?</div>
+      <select id="rbEliminatorSelect" style="width:100%;">
+        ${active.map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}
+      </select>
+    </div>`:''}
     <div class="modal-actions">
       <button class="btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn" onclick="doRebuy()">Confirm — $${S.settings.buyinAmount}</button>
     </div>`);
 }
+
 function doRebuy(){
   const i=parseInt(document.getElementById('rbPlayer').value);
   const chips=parseInt(document.getElementById('rbChips').value)||S.settings.rebuyChips;
+  const bountyOn=S.settings.bountyOn;
+  const pkoOn=S.settings.pkoOn;
+
+  // Process bounty for the eliminator
+  if(bountyOn){
+    const eliminatorIdx=parseInt(document.getElementById('rbEliminatorSelect')?.value);
+    const eliminator=isNaN(eliminatorIdx)?null:S.players[eliminatorIdx];
+    if(eliminator&&eliminator!==S.players[i]){
+      const bountyVal=S.players[i].bounty||0;
+      if(pkoOn){
+        const halfPaid=Math.floor(bountyVal/2);
+        const halfAdded=bountyVal-halfPaid;
+        S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+halfPaid;
+        eliminator.bounty=(eliminator.bounty||0)+halfAdded;
+        if(halfPaid>0)showToast(`${eliminator.name} wins $${halfPaid} + $${halfAdded} added to bounty`);
+      }else{
+        S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+bountyVal;
+        if(bountyVal>0)showToast(`${eliminator.name} wins $${bountyVal} bounty!`);
+      }
+      // Reset rebuy player's bounty to starting amount
+      S.players[i].bounty=S.settings.bountyAmount;
+    }
+  }
+
   S.players[i].chips+=chips;S.players[i].rebuys++;S.totalRebuys++;
   closeModal();renderAll();autoSave();
   showToast(S.players[i].name+' rebuys! +'+fn(chips));
 }
 
+function showAddonModal(){
+  if(!isRebuyWindowOpen()){
+    showToast(`Add-ons closed after Round ${S.settings.rebuyCutoff||3}`);return;
+  }
+  // Add-ons are for active players only (not busted)
+  const active=S.players.filter(p=>!p.busted);
+  if(!active.length){showToast('No active players');return;}
+  showModal(`<div class="modal-title">➕ Add-on</div>
+    <div style="color:var(--text-dim);font-size:13px;margin-bottom:12px;">Add chips to an active player. No elimination — bounties unaffected.</div>
+    <div class="field"><label>Player</label>
+      <select id="addonPlayer">${active.map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Chips Added</label><input type="number" id="addonChips" value="${S.settings.rebuyChips}" step="100" min="100"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="doAddon()">Confirm — $${S.settings.buyinAmount}</button>
+    </div>`);
+}
+
+function doAddon(){
+  const i=parseInt(document.getElementById('addonPlayer').value);
+  const chips=parseInt(document.getElementById('addonChips').value)||S.settings.rebuyChips;
+  S.players[i].chips+=chips;
+  S.totalRebuys++; // counts toward pot
+  closeModal();renderAll();autoSave();
+  showToast(S.players[i].name+' add-on! +'+fn(chips));
+}
+
 function showEliminateModal(){
   const active=S.players.filter(p=>!p.busted);
   if(!active.length){showToast('No active players');return;}
+  const bountyOn=S.settings.bountyOn;
   showModal(`<div class="modal-title">💀 Bust Out</div>
-    <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Check all players eliminated on this hand. Multiple = tie, prize split equally.</div>
+    <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Check all players eliminated on this hand. Multiple = tie.</div>
     <div id="bustList">
       ${active.map(p=>`
         <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
           <input type="checkbox" id="bust_${S.players.indexOf(p)}" value="${S.players.indexOf(p)}"
-            style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;">
-          <label for="bust_${S.players.indexOf(p)}" style="font-size:15px;font-weight:600;cursor:pointer;margin:0;color:var(--text);text-transform:none;letter-spacing:0;">${p.name}</label>
+            style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;"
+            ${bountyOn?'onchange="updateEliminatorDropdown()"':''}>
+          <label for="bust_${S.players.indexOf(p)}" style="font-size:15px;font-weight:600;cursor:pointer;margin:0;color:var(--text);text-transform:none;letter-spacing:0;">
+            ${p.name}${bountyOn?` <span style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--gold);">($${p.bounty||0} bounty)</span>`:''}
+          </label>
         </div>`).join('')}
     </div>
+    ${bountyOn?`
+    <div id="eliminatorSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Who eliminated them?</div>
+      <select id="eliminatorSelect" style="width:100%;">
+        ${active.map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}
+      </select>
+    </div>`:''}
     <div class="modal-actions">
       <button class="btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" onclick="doEliminate()">Bust Out</button>
     </div>`);
 }
 
+function updateEliminatorDropdown(){
+  const sel=document.getElementById('eliminatorSelect');
+  if(!sel)return;
+  const checkedIndices=new Set(
+    Array.from(document.querySelectorAll('#bustList input[type=checkbox]:checked')).map(c=>parseInt(c.value))
+  );
+  const active=S.players.filter(p=>!p.busted);
+  // Rebuild options excluding checked players
+  const currentVal=parseInt(sel.value);
+  sel.innerHTML=active
+    .filter(p=>!checkedIndices.has(S.players.indexOf(p)))
+    .map(p=>`<option value="${S.players.indexOf(p)}" ${S.players.indexOf(p)===currentVal&&!checkedIndices.has(currentVal)?'selected':''}>${p.name}</option>`)
+    .join('');
+}
+
 function doEliminate(){
   const checked=Array.from(document.querySelectorAll('#bustList input[type=checkbox]:checked'));
   if(!checked.length){showToast('Select at least one player');return;}
   const indices=checked.map(c=>parseInt(c.value));
-  // Mark all selected as busted
+  const bountyOn=S.settings.bountyOn;
+  const pkoOn=S.settings.pkoOn;
+  const eliminatorIdx=bountyOn?parseInt(document.getElementById('eliminatorSelect').value):null;
+  const eliminator=bountyOn?S.players[eliminatorIdx]:null;
+
+  // Process bounties before marking busted
+  let bountyToast='';
+  if(bountyOn&&eliminator){
+    indices.forEach(i=>{
+      const bustedPlayer=S.players[i];
+      const bountyVal=bustedPlayer.bounty||0;
+      if(pkoOn){
+        // PKO: half paid now, half added to eliminator's bounty
+        const halfPaid=Math.floor(bountyVal/2);
+        const halfAdded=bountyVal-halfPaid;
+        S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+halfPaid;
+        eliminator.bounty=(eliminator.bounty||0)+halfAdded;
+        if(halfPaid>0)bountyToast+=`${eliminator.name} wins $${halfPaid} + $${halfAdded} added to their bounty. `;
+      }else{
+        // Standard: eliminator gets full bounty
+        S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+bountyVal;
+        if(bountyVal>0)bountyToast+=`${eliminator.name} wins $${bountyVal} bounty! `;
+      }
+    });
+  }
+
+  // Mark busted
   indices.forEach(i=>S.players[i].busted=true);
   const remaining=S.players.filter(p=>!p.busted).length;
-  // All busted this hand share the same place (tie)
   const place=remaining+1;
-  indices.forEach(i=>S.finishOrder.push({name:S.players[i].name, place, tied:indices.length>1}));
+  indices.forEach(i=>S.finishOrder.push({name:S.players[i].name, place, tied:indices.length>1, eliminatedBy:eliminator?.name}));
+
   closeModal();renderAll();autoSave();
-  if(indices.length>1){
+
+  if(bountyToast)showToast(bountyToast.trim());
+  else if(indices.length>1){
+    const names=indices.map(i=>S.players[i].name).join(' & ');
     showToast(`💀 ${names} — tie ${ord(place)}`);
   }else{
     showToast('💀 '+S.players[indices[0]].name+' — '+ord(place)+' place');
   }
-  if(remaining===1){
+
+  if(remaining<=1){
+    // Award winner their own bounty + bounties of anyone they just eliminated
     const winner=S.players.find(p=>!p.busted);
-    if(winner)S.finishOrder.push({name:winner.name,place:1});
-    setTimeout(()=>endTournamentWithResults([]),1400);
-  }
-  if(remaining===0){
+    if(winner){
+      // Winner keeps their own bounty
+      S.bountyEarnings[winner.name]=(S.bountyEarnings[winner.name]||0)+(winner.bounty||0);
+      // If bounties on and last busts were by someone (could be this winner), handle via eliminator logic above
+      S.finishOrder.push({name:winner.name,place:1});
+    }
     setTimeout(()=>endTournamentWithResults([]),1400);
   }
 }
@@ -1209,10 +1545,14 @@ function buildStandingsRows(finishOrder, players, pot, pcts, paidPos, forResults
       const pay=payForPlace(place,group.length);
       const tieLabel=group.length>1?` <span style="font-size:11px;color:var(--gold-dark);font-weight:600;letter-spacing:0.5px;">TIE</span>`:'';
       group.forEach(name=>{
+        const bountyEarned=(S.bountyEarnings&&S.bountyEarnings[name])||0;
         rows.push(`<div class="finish-item">
           <div class="finish-place ${cls}">${ord(place)}</div>
           <div style="flex:1;font-weight:600;${forResults?'font-size:16px;':''}">${name}${tieLabel}</div>
-          ${pay?`<div class="finish-pay">$${pay.toLocaleString()}</div>`:''}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+            ${pay?`<div class="finish-pay">$${pay.toLocaleString()}</div>`:''}
+            ${bountyEarned>0?`<div style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#e67e22;">+$${bountyEarned} bounty</div>`:''}
+          </div>
         </div>`);
       });
       // Skip ahead if this was a tie (those places are consumed)
