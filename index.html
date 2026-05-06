@@ -936,7 +936,7 @@ function startTournament(){
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   S.seatingOrder=idx;
   S.players.forEach(p=>{
-    p.busted=false;p.rebuys=0;p.chips=S.settings.startingChips;
+    p.busted=false;p.rebuys=0;p.addons=0;p.chips=S.settings.startingChips;
     p.bounty=S.settings.bountyAmount; // each player starts with their bounty on their head
   });
   S.level=0;S.totalRebuys=0;S.finishOrder=[];S.running=false;S.onBreak=false;
@@ -1147,10 +1147,10 @@ function renderBountyBoard(){
   if(!S.settings?.bountyOn){board.style.display='none';return;}
   board.style.display='';
 
-  function makeCell(names, amt, accentColor){
-    return `<div style="text-align:center;padding:4px 8px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid ${accentColor}22;flex-shrink:0;">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:${accentColor};font-weight:700;margin-bottom:2px;">$${amt}</div>
-      ${names.map(n=>`<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;">${n}</div>`).join('')}
+  function makeCell(name, amt, accentColor){
+    return `<div style="text-align:center;padding:4px 0;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid ${accentColor}22;flex-shrink:0;width:72px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:13px;color:${accentColor};font-weight:700;">$${amt}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;">${name}</div>
     </div>`;
   }
 
@@ -1164,7 +1164,7 @@ function renderBountyBoard(){
       const byAmt={};
       earners.forEach(([name,amt])=>{if(!byAmt[amt])byAmt[amt]=[];byAmt[amt].push(name);});
       earnedEl.innerHTML=Object.keys(byAmt).map(Number).sort((a,b)=>b-a)
-        .map(amt=>makeCell(byAmt[amt],amt,'#27ae60')).join('');
+        .flatMap(amt=>byAmt[amt].map(name=>makeCell(name,amt,'#27ae60'))).join('');
     }
   }
 
@@ -1178,7 +1178,7 @@ function renderBountyBoard(){
       const byAmt={};
       active.forEach(p=>{const amt=p.bounty||0;if(!byAmt[amt])byAmt[amt]=[];byAmt[amt].push(p.name);});
       activeEl.innerHTML=Object.keys(byAmt).map(Number).sort((a,b)=>b-a)
-        .map(amt=>makeCell(byAmt[amt],amt,'#e67e22')).join('');
+        .flatMap(amt=>byAmt[amt].map(name=>makeCell(name,amt,'#e67e22'))).join('');
     }
   }
 }
@@ -1318,6 +1318,7 @@ function showTModal(type){
           ?'<span class="out-badge">Out</span>'
           :'<span style="color:#27ae60;font-weight:700;font-size:12px;">Active</span>'}</td>
         <td style="padding:6px 8px;text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:13px;color:var(--text-dim);">${p.rebuys>0?`<span class="rebuy-badge">R${p.rebuys}</span>`:'-'}</td>
+        <td style="padding:6px 8px;text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:13px;color:var(--text-dim);">${(p.addons||0)>0?`<span class="rebuy-badge" style="background:rgba(52,152,219,0.25);color:#3498db;">A${p.addons}</span>`:'-'}</td>
         ${bountyOn?`
         <td style="padding:6px 8px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e67e22;font-weight:700;">${p.busted?'-':'$'+(p.bounty||0)}</td>
         <td style="padding:6px 8px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:#27ae60;font-weight:700;">${earned>0?'$'+earned:'-'}</td>`:''}
@@ -1332,6 +1333,7 @@ function showTModal(type){
               <th style="padding:4px 8px;text-align:left;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Name</th>
               <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Status</th>
               <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Rebuys</th>
+              <th style="padding:4px 8px;text-align:center;font-size:11px;color:#3498db;letter-spacing:1px;text-transform:uppercase;">Addons</th>
               ${bountyOn?'<th style="padding:4px 8px;text-align:center;font-size:11px;color:#e67e22;letter-spacing:1px;text-transform:uppercase;">Bounty</th><th style="padding:4px 8px;text-align:center;font-size:11px;color:#27ae60;letter-spacing:1px;text-transform:uppercase;">Earned</th>':''}
             </tr>
           </thead>
@@ -1462,6 +1464,7 @@ function doAddon(){
   const i=parseInt(document.getElementById('addonPlayer').value);
   const chips=parseInt(document.getElementById('addonChips').value)||S.settings.rebuyChips;
   S.players[i].chips+=chips;
+  S.players[i].addons=(S.players[i].addons||0)+1;
   S.totalRebuys++; // counts toward pot
   closeModal();renderAll();autoSave();
   showToast(S.players[i].name+' add-on! +'+fn(chips));
@@ -1646,7 +1649,9 @@ function showResultsModal(){
   const pcts=S.settings.pcts||[100];
   const paidPos=S.settings.paidPos||3;
   const rows=buildStandingsRows(S.finishOrder,S.players,pot,pcts,paidPos,false);
-  const bountyNote=S.settings.bountyOn?` <span style="font-size:11px;color:#e67e22;">(+ $${(grossPot-pot).toLocaleString()} bounties)</span>`:'';
+  const bountyNote=S.settings.bountyOn
+    ?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">$${pot.toLocaleString()} prizes · $${(grossPot-pot).toLocaleString()} bounties</div>`
+    :'';
   showModal(`<div class="modal-title">🏆 Standings</div>
     <div style="max-height:440px;overflow-y:auto;">${rows||'<div style="color:var(--text-dim)">No eliminations yet.</div>'}</div>
     <div style="text-align:center;margin-top:10px;color:var(--text-dim);font-size:13px;">Pot: <span style="color:var(--gold)">$${grossPot.toLocaleString()}</span>${bountyNote}</div>
