@@ -1717,6 +1717,7 @@ function logResults(){
       inMoney:inMoney?'Yes':'No',
       headsUp:headsUp?'Yes':'No',
       won:won?'Yes':'No',
+      bubble:finish===4?'Yes':'No',
     };
   });
 
@@ -1747,6 +1748,22 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 // ── SOUND ────────────────────────────────────────────────
 let actx=null;
 function getActx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+
+// iOS requires AudioContext to be resumed after a user gesture
+function unlockAudio(){
+  const ctx=getActx();
+  if(ctx.state==='suspended')ctx.resume();
+  // Play a silent buffer to fully unlock
+  const buf=ctx.createBuffer(1,1,22050);
+  const src=ctx.createBufferSource();
+  src.buffer=buf;
+  src.connect(ctx.destination);
+  src.start(0);
+  document.removeEventListener('touchstart',unlockAudio);
+  document.removeEventListener('click',unlockAudio);
+}
+document.addEventListener('touchstart',unlockAudio,{once:true});
+document.addEventListener('click',unlockAudio,{once:true});
 function playSound(type){
   if(!S.settings?.sound)return;
   try{
