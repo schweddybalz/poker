@@ -671,7 +671,10 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 <div class="screen" id="screen-results">
   <nav>
     <div class="logo">🏆 Results</div>
-    <button class="btn" onclick="newTournament()">New Tournament</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-outline btn-sm" id="logBtn" onclick="logResults()" style="font-size:13px;">📊 Log to Sheets</button>
+      <button class="btn" onclick="newTournament()">New Tournament</button>
+    </div>
   </nav>
   <div class="content">
     <div class="winner-bar" id="resultsWinner">🏆 Winner! 🏆</div>
@@ -1658,6 +1661,77 @@ function showResultsModal(){
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Close</button>
     </div>`);
+}
+
+// ── GOOGLE SHEETS LOGGING ────────────────────────────────
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbzjs3q2qRncjhJmFSAWfs3ZF3wPSQpZd3HWE_4mjYxZ3UO6V7nKCeYINSs3o5wq48W_/exec';
+
+function logResults(){
+  const btn=document.getElementById('logBtn');
+  btn.textContent='⏳ Logging...';
+  btn.disabled=true;
+
+  const date=new Date().toLocaleDateString('en-CA');
+  const totalPlayers=S.players.length;
+  const grossPot=(totalPlayers+S.totalRebuys)*S.settings.buyinAmount;
+  const prizePot=prizePool();
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+  const pays=pcts.map(p=>Math.round(prizePot*p/100));
+  const bountyOn=S.settings.bountyOn;
+
+  // Count KOs per player from finishOrder.eliminatedBy
+  const koCount={};
+  S.finishOrder.forEach(f=>{
+    if(f.eliminatedBy)koCount[f.eliminatedBy]=(koCount[f.eliminatedBy]||0)+1;
+  });
+
+  const rows=S.players.map(p=>{
+    const finEntry=S.finishOrder.find(f=>f.name===p.name);
+    const finish=finEntry?finEntry.place:1;
+    const inMoney=finish<=paidPos;
+    const headsUp=finish<=2;
+    const won=finish===1;
+    // Handle tied prizes
+    const tiedAt=S.finishOrder.filter(f=>f.place===finish);
+    let prize=0;
+    if(inMoney){
+      let total=0;
+      for(let i=0;i<tiedAt.length;i++){if(finish+i<=paidPos)total+=(pays[finish+i-1]||0);}
+      prize=tiedAt.length>1?Math.round(total/tiedAt.length):total;
+    }
+    const rebuys=p.rebuys||0;
+    const addons=p.addons||0;
+    return {
+      date,
+      tournament:S.settings.name||'Home Game',
+      players:totalPlayers,
+      finish,
+      buyin:S.settings.buyinAmount,
+      rebuys,addons,
+      totalSpent:S.settings.buyinAmount*(1+rebuys+addons),
+      prize,
+      bounties:bountyOn?(S.bountyEarnings[p.name]||0):0,
+      kos:koCount[p.name]||0,
+      inMoney:inMoney?'Yes':'No',
+      headsUp:headsUp?'Yes':'No',
+      won:won?'Yes':'No',
+    };
+  });
+
+  fetch(SHEETS_URL,{method:'POST',body:JSON.stringify({rows})})
+    .then(r=>r.text())
+    .then(()=>{
+      btn.textContent='✅ Logged!';
+      btn.disabled=false;
+      showToast('Results logged to Google Sheets!');
+    })
+    .catch(()=>{
+      btn.textContent='❌ Failed';
+      btn.disabled=false;
+      showToast('Failed to log — check connection');
+      setTimeout(()=>{btn.textContent='📊 Log to Sheets';btn.disabled=false;},3000);
+    });
 }
 
 function newTournament(){
