@@ -846,14 +846,25 @@ function removePlayer(i){S.players.splice(i,1);renderPlayerList();}
 function renderPlayerList(){
   const list=document.getElementById('playerList');
   const badge=document.getElementById('playerCountBadge');
-  badge.textContent=S.players.length+' players';
-  if(!S.players.length){list.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:18px;font-size:13px;">No players yet.</div>';return;}
-  list.innerHTML=S.players.map((p,i)=>`
-    <div class="player-entry">
-      <div class="player-seat">${i+1}</div>
-      <div class="player-name-text">${p.name}</div>
-      <button class="btn-icon" onclick="removePlayer(${i})">✕</button>
-    </div>`).join('');
+  const count = S.players.length;
+  badge.textContent = count + ' players';
+  
+  // Auto-adjust payout positions based on player count
+  const paidPosEl = document.getElementById('paidPositions');
+  if (paidPosEl) {
+    if (count > 10) {
+      paidPosEl.value = "4"; // Set to 4 places
+    } else {
+      paidPosEl.value = "3"; // Set back to 3 places
+    }
+    renderPrizeRows(); // Refresh the prize rows to reflect the change
+  }
+
+  if(!S.players.length){
+    list.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:18px;font-size:13px;">No players yet.</div>';
+    return;
+  }
+  // ... rest of your existing renderPlayerList code
 }
 
 // ── BLINDS ───────────────────────────────────────────────
@@ -912,14 +923,17 @@ function addChipDenom(){
 
 // ── PRIZE ────────────────────────────────────────────────
 function renderPrizeRows(){
-  const el=document.getElementById('prizeRows');if(!el)return;
+  const el=document.getElementById('prizeRows'); if(!el) return;
   const num=parseInt(document.getElementById('paidPositions')?.value)||3;
-  const defs=[50,30,20,10,5,3,2];
+  
+  // Updated defaults: 1st=50, 2nd=25, 3rd=15, 4th=10
+  const defs=[50, 25, 15, 10, 5, 3, 2]; 
+  
   const existing=Array.from(el.querySelectorAll('.pct')).map(i=>parseFloat(i.value));
   el.innerHTML=Array.from({length:num},(_,i)=>`
     <div class="prize-row">
       <label>${ord(i+1)} Place</label>
-      <input type="number" class="pct prize-pct-input" value="${existing[i]??defs[i]??0}" min="0" max="100" step="1" style="max-width:80px;" onchange="chkPrize()">
+      <input type="number" class="pct prize-pct-input" value="${existing[i]??defs[i]??0}" min="0" max="100" step="0.5" style="max-width:80px;" onchange="chkPrize()">
       <span style="color:var(--text-dim);font-size:13px;">%</span>
     </div>`).join('');
 }
