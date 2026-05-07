@@ -844,27 +844,34 @@ function addPlayer(){
 }
 function removePlayer(i){S.players.splice(i,1);renderPlayerList();}
 function renderPlayerList(){
-  const list=document.getElementById('playerList');
-  const badge=document.getElementById('playerCountBadge');
+  const list = document.getElementById('playerList');
+  const badge = document.getElementById('playerCountBadge');
   const count = S.players.length;
-  badge.textContent = count + ' players';
   
-  // Auto-adjust payout positions based on player count
+  if (badge) badge.textContent = count + ' players';
+
+  // AUTO-ADJUST PAYOUTS
   const paidPosEl = document.getElementById('paidPositions');
   if (paidPosEl) {
-    if (count > 10) {
-      paidPosEl.value = "4"; // Set to 4 places
-    } else {
-      paidPosEl.value = "3"; // Set back to 3 places
+    // Only auto-switch if PKO is NOT active
+    if (!document.getElementById('pkoSlider')?.checked) {
+      paidPosEl.value = (count > 10) ? "4" : "3";
+      renderPrizeRows(); // Refresh the prize rows
     }
-    renderPrizeRows(); // Refresh the prize rows to reflect the change
   }
 
-  if(!S.players.length){
-    list.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:18px;font-size:13px;">No players yet.</div>';
+  // DRAW THE LIST
+  if(count === 0){
+    list.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:18px;font-size:13px;">No players yet.</div>';
     return;
   }
-  // ... rest of your existing renderPlayerList code
+
+  list.innerHTML = S.players.map((p, i) => `
+    <div class="player-entry">
+      <div class="player-seat">${i + 1}</div>
+      <div class="player-name-text">${p.name}</div>
+      <button class="btn-icon" onclick="removePlayer(${i})">✕</button>
+    </div>`).join('');
 }
 
 // ── BLINDS ───────────────────────────────────────────────
@@ -1780,7 +1787,7 @@ function logResults(){
       inMoney:inMoney?'Yes':'No',
       headsUp:headsUp?'Yes':'No',
       won:won?'Yes':'No',
-      bubble:finish===4?'Yes':'No',
+      bubble:finish===(paidPos+1)?'Yes':'No',
     };
   });
 
@@ -1800,8 +1807,26 @@ function logResults(){
 }
 
 function newTournament(){
+  // 1. Reset the logic flags
+  S.isEnding = false;
+  
+  // 2. Reset the Log Button UI
+  const logBtn = document.getElementById('logBtn');
+  if (logBtn) {
+    logBtn.textContent = '📊 Log to Sheets';
+    logBtn.disabled = false;
+  }
+
+  // 3. Clear player states for the next game
+  S.players.forEach(p => {
+    p.busted = false;
+    p.rebuys = 0;
+    p.addons = 0;
+    p.chips = S.settings.startingChips || 1000;
+  });
+
+  // 4. Return to setup
   showScreen('setup');
-  S.players.forEach(p=>{p.busted=false;p.rebuys=0;p.chips=S.settings.startingChips||1000;});
   renderPlayerList();
 }
 
