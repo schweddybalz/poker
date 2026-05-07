@@ -1752,11 +1752,37 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 let actx=null;
 function getActx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
 
-function testAudio(){
-  // Create context fresh if needed
-  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
-  // Resume must happen synchronously within the gesture
-  actx.resume().then(()=>playSound('beep'));
+async function testAudio() {
+  try {
+    // 1. Initialize if null
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // 2. Explicitly resume (essential for iOS Safari)
+    await actx.resume();
+
+    // 3. THE HARDWARE KICK: Play a tiny bit of silence.
+    // This tells the iOS audio engine to actually "wake up" 
+    // the hardware routes.
+    const buffer = actx.createBuffer(1, 1, 22050);
+    const source = actx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(actx.destination);
+    source.start(0);
+
+    // 4. Wait a tiny moment for hardware to engage, then play the beep
+    setTimeout(() => {
+      playSound('beep');
+      if (actx.state === 'running') {
+        showToast("🔊 Sound Unlocked");
+      }
+    }, 50);
+
+  } catch (e) {
+    console.error("Audio unlock failed", e);
+    showToast("❌ Tap again to unlock audio");
+  }
 }
 
 // iOS requires AudioContext to be resumed after a user gesture
