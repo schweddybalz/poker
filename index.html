@@ -1277,6 +1277,9 @@ function submitEarlyEnd(){
 function endTournamentWithResults(earlyPlacements){
   clearInterval(S.timerInterval);S.running=false;
   document.getElementById('brkOverlay').classList.add('hidden');
+
+  playSound('win');
+
   const grossPot=(S.players.length+S.totalRebuys)*S.settings.buyinAmount;
   const pot=prizePool();
   const pcts=S.settings.pcts||[100];
@@ -1767,8 +1770,8 @@ function testAudio() {
   osc.stop(actx.currentTime + 0.01); // 10ms pop to wake up the DAC
 
   actx.resume().then(() => {
-    playSound('beep');
-    showToast('🔊 Audio Active-');
+    playSound('win');
+    showToast('🔊 Audio Active');
   });
 }
 
@@ -1803,6 +1806,13 @@ function playSound(type){
     else if(type==='warn'){tone(660,0,0.18,0.2);tone(880,0.22,0.18,0.2);}
     else if(type==='level'){tone(523,0,0.22,0.28);tone(659,0.27,0.22,0.28);tone(784,0.54,0.45,0.28);}
     else if(type==='brk'){tone(784,0,0.28,0.22);tone(659,0.33,0.28,0.22);tone(523,0.66,0.55,0.22);}
+    // Add the win sound case here:
+    else if(type==='win'){
+      tone(523.25, 0, 0.15, 0.2);     // C5
+      tone(659.25, 0.15, 0.15, 0.2);  // E5
+      tone(783.99, 0.30, 0.15, 0.2);  // G5
+      tone(1046.50, 0.45, 0.5, 0.2);  // C6
+    }
   }catch(e){}
 }
 
