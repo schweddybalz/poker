@@ -532,7 +532,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
             <div class="toggle-row" style="margin-bottom:14px;">
               <span class="toggle-label">Sound Alerts</span>
               <label class="slider"><input type="checkbox" id="soundEnabled" checked><span class="slider-track"></span></label>
-              <button class="btn-outline btn-sm" style="margin-left:12px;" onclick="unlockAudio();playSound('beep');">Test 🔊</button>
+              <button class="btn-outline btn-sm" style="margin-left:12px;" onclick="testAudio()">Test 🔊</button>
             </div>
             <div class="toggle-row" style="margin-bottom:14px;">
               <span class="toggle-label">Auto-advance Levels</span>
@@ -951,7 +951,8 @@ function startTournament(){
   document.getElementById('bountyBoard').style.display=S.settings.bountyOn?'':'none';
   renderAll();autoSave();
   buildDebugPanel();
-  playSound('level');
+  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+  actx.resume().then(()=>playSound('level'));
   showToast('🎲 Seats randomized — good luck!');
 }
 
@@ -1750,6 +1751,13 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 // ── SOUND ────────────────────────────────────────────────
 let actx=null;
 function getActx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+
+function testAudio(){
+  // Create context fresh if needed
+  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+  // Resume must happen synchronously within the gesture
+  actx.resume().then(()=>playSound('beep'));
+}
 
 // iOS requires AudioContext to be resumed after a user gesture
 function unlockAudio(){
