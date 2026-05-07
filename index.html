@@ -986,16 +986,40 @@ function loadLevel(i){
   autoSave();
 }
 function toggleTimer(){
-  if(S.running){S.running=false;clearInterval(S.timerInterval);}
-  else{S.running=true;S.timerInterval=setInterval(tick,1000);}
+  if(S.running){
+    S.running=false;
+    clearInterval(S.timerInterval);
+  } else {
+    S.running=true;
+    S.timerInterval=setInterval(tick,1000);
+    wakelock(); // Re-request the lock every time you press play
+  }
   updatePPBtn();
 }
-function tick(){
-  if(S.timerSec<=0){clearInterval(S.timerInterval);S.running=false;levelEnd();return;}
+function tick() {
+  if (S.timerSec <= 0) {
+    clearInterval(S.timerInterval);
+    S.running = false;
+    levelEnd();
+    return;
+  }
   S.timerSec--;
-  if(S.timerSec%30===0)autoSave(); // save every 30 seconds
-  if(S.timerSec===S.settings.warnAt)playSound('warn');
-  if(S.timerSec>0&&S.timerSec<=10)playSound('beep');
+
+  // HEARTBEAT: Every 15 seconds, "tickle" the hardware
+  if (S.timerSec % 15 === 0 && actx) {
+    const osc = actx.createOscillator();
+    const g = actx.createGain();
+    g.gain.value = 0.0001; // Silent pulse
+    osc.connect(g);
+    g.connect(actx.destination);
+    osc.start(0);
+    osc.stop(actx.currentTime + 0.001);
+  }
+
+  if (S.timerSec % 30 === 0) autoSave();
+  if (S.timerSec === S.settings.warnAt) playSound('warn');
+  if (S.timerSec > 0 && S.timerSec <= 10) playSound('beep');
+  
   updateTimerDisp();
 }
 function levelEnd(){
@@ -1945,6 +1969,15 @@ function copyDebugValues(){
     showToast('✅ Values copied');
   });
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && actx) {
+    // Force the audio hardware to wake back up
+    actx.resume().then(() => {
+      console.log("Audio resumed after unlock");
+    });
+  }
+});
 
 // ── HELPERS ──────────────────────────────────────────────
 function ft(s){const m=Math.floor(s/60);return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
