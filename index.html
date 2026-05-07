@@ -226,11 +226,6 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
     </div>
     <button class="btn" onclick="startTournament()">▶ Start</button>
   </nav>
-  <div id="resumeBanner" style="display:none;background:rgba(201,168,76,0.12);border-bottom:1px solid var(--gold-dark);padding:10px 20px;display:flex;align-items:center;gap:12px;">
-    <span style="font-weight:600;font-size:14px;color:var(--gold-light);">🎲 Tournament in progress — resume where you left off?</span>
-    <button class="btn btn-sm" onclick="resumeTournament()">Resume</button>
-    <button class="btn-outline btn-sm" onclick="clearSave();document.getElementById('resumeBanner').style.display='none';">Discard</button>
-  </div>
   <div class="content">
     <div id="tab-players">
       <div class="setup-grid">
@@ -541,6 +536,15 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
           </div>
         </div>
       </div>
+      <div class="card">
+        <div class="card-title">💾 Tournament Persistence</div>
+        <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;">
+          Manually resume a tournament.
+        </p>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="manualLoadBtn" onclick="resumeTournament()">📂 Load Saved Game</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -735,7 +739,7 @@ function makeSchedule(min){
 // ── LOCALSTORAGE ──────────────────────────────────────────
 const SAVE_KEY='poker_tournament_state';
 function autoSave() {
-  // If seatingOrder is empty, the game hasn't started. DO NOT SAVE.
+  // Only save if the tournament has actually started (seatingOrder is populated)
   if (!S.seatingOrder || S.seatingOrder.length === 0) return; 
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({S, allowRebuys}));
@@ -766,22 +770,25 @@ window.onload=()=>{
 };
 
 function resumeTournament() {
+  if (!hasSavedGame()) {
+    showToast('❌ No saved tournament found');
+    return;
+  }
+  
   if (!restoreGame()) return;
   
-  // If the save is empty/invalid, wipe it and hide the banner forever
+  // Validation: If it's a "Ghost Save" with no seating, reject it
   if (!S.seatingOrder || S.seatingOrder.length === 0) {
-    clearSave(); 
-    document.getElementById('resumeBanner').style.display = 'none';
-    showToast('ℹ️ Stale session data deleted.');
+    showToast('⚠️ Save file is incomplete or invalid');
     return;
   }
 
-  // Only proceed if valid
-  document.getElementById('resumeBanner').style.display = 'none';
   showScreen('tournament');
   document.getElementById('tName').textContent = '🃏 ' + S.settings.name;
-  updatePPBtn(); renderAll(); buildDebugPanel();
-  showToast('✅ Tournament resumed');
+  updatePPBtn(); 
+  renderAll(); 
+  buildDebugPanel();
+  showToast('✅ Tournament successfully resumed');
 }
 
 function updateBountyDefault(){
