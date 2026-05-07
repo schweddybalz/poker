@@ -532,6 +532,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
             <div class="toggle-row" style="margin-bottom:14px;">
               <span class="toggle-label">Sound Alerts</span>
               <label class="slider"><input type="checkbox" id="soundEnabled" checked><span class="slider-track"></span></label>
+              <button class="btn-outline btn-sm" style="margin-left:12px;" onclick="unlockAudio();playSound('beep');">Test 🔊</button>
             </div>
             <div class="toggle-row" style="margin-bottom:14px;">
               <span class="toggle-label">Auto-advance Levels</span>
@@ -950,6 +951,7 @@ function startTournament(){
   document.getElementById('bountyBoard').style.display=S.settings.bountyOn?'':'none';
   renderAll();autoSave();
   buildDebugPanel();
+  playSound('level');
   showToast('🎲 Seats randomized — good luck!');
 }
 
@@ -1355,16 +1357,6 @@ function showTModal(type){
       <div class="toggle-row" style="margin-bottom:14px;">
         <span class="toggle-label">Sound Alerts</span>
         <label class="slider"><input type="checkbox" id="tSoundEnabled" ${s.sound?'checked':''} onchange="S.settings.sound=this.checked;"><span class="slider-track"></span></label>
-      </div>
-      <div style="margin-bottom:14px;">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Test Audio</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-outline btn-sm" onclick="unlockAudio();playSound('beep');">Beep</button>
-          <button class="btn-outline btn-sm" onclick="unlockAudio();playSound('warn');">Warning</button>
-          <button class="btn-outline btn-sm" onclick="unlockAudio();playSound('level');">Level End</button>
-          <button class="btn-outline btn-sm" onclick="unlockAudio();playSound('brk');">Break</button>
-        </div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">If you hear nothing, check your silent switch and volume.</div>
       </div>
       <div class="toggle-row" style="margin-bottom:14px;">
         <span class="toggle-label">Auto-advance Rounds</span>
