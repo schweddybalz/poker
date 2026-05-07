@@ -523,7 +523,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
         <div class="card-title">⚙️ Settings</div>
         <div class="setup-grid">
           <div>
-            <div class="field"><label>Tournament Name</label><input type="text" id="tournamentName" value="Home Game"></div>
+            <div class="field"><label>Tournament Name</label><input type="text" id="tournamentName" value="Poker Night"></div>
             <div class="toggle-row" style="margin-bottom:14px;">
               <span class="toggle-label">Sound Alerts</span>
               <label class="slider"><input type="checkbox" id="soundEnabled" checked><span class="slider-track"></span></label>
@@ -877,7 +877,7 @@ function renderBlindTable(){
   if(!tb)return;
   tb.innerHTML=S.blinds.map((b,i)=>`
     <tr><td style="color:var(--gold-dark);font-family:'Share Tech Mono',monospace;">${i+1}${b.break?' 🔔':''}</td>
-    <td>${fn(b.sb)}</td><td>${fn(b.bb)}</td><td>${b.ante>0?fn(b.ante):'—'}</td><td>${b.min}m</td>
+    <td>${b.sb.toLocaleString()}</td><td>${b.bb.toLocaleString()}</td><td>${b.ante>0?b.ante.toLocaleString():'—'}</td><td>${b.min}m</td>
     <td><button class="btn-icon" onclick="removeBlindLevel(${i})">✕</button></td></tr>`).join('');
 }
 // ── CHIPS ────────────────────────────────────────────────
@@ -1394,7 +1394,7 @@ function showTModal(type){
       </div>
       <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>`);
   }else if(type==='blinds'){
-    const rows=S.blinds.map((b,i)=>`<tr${i===S.level?' class="cur"':''}><td style="color:var(--gold-dark);font-family:'Share Tech Mono',monospace;">${i+1}${b.break?' 🔔':''}</td><td>${fn(b.sb)}</td><td>${fn(b.bb)}</td><td>${b.ante>0?fn(b.ante):'—'}</td><td>${b.min}m</td></tr>`).join('');
+    const rows = S.blinds.map((b, i) => `<tr${i === S.level ? ' class="cur"' : ''}><td style="color:var(--gold-dark);font-family:'Share Tech Mono',monospace;">${i + 1}${b.break ? ' 🔔' : ''}</td><td>${b.sb.toLocaleString()}</td><td>${b.bb.toLocaleString()}</td><td>${b.ante > 0 ? b.ante.toLocaleString() : '—'}</td><td>${b.min}m</td></tr>`).join('');
     showModal(`<div class="modal-title">Blind Structure</div>
       <div style="max-height:400px;overflow-y:auto;"><table class="blind-table"><thead><tr><th>Rnd</th><th>SB</th><th>BB</th><th>Ante</th><th>Time</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>`);
