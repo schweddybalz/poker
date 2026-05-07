@@ -736,8 +736,8 @@ function makeSchedule(min){
 // ── LOCALSTORAGE ──────────────────────────────────────────
 const SAVE_KEY='poker_tournament_state';
 function autoSave() {
-  // SEATING ORDER is the only proof that a game actually started
-  if (!S.settings || !S.settings.name || !S.seatingOrder || S.seatingOrder.length === 0) return; 
+  // If seatingOrder is empty, the game hasn't started. DO NOT SAVE.
+  if (!S.seatingOrder || S.seatingOrder.length === 0) return; 
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({S, allowRebuys}));
   } catch (e) {}
@@ -769,13 +769,15 @@ window.onload=()=>{
 function resumeTournament() {
   if (!restoreGame()) return;
   
+  // If the save is empty/invalid, wipe it and hide the banner forever
   if (!S.seatingOrder || S.seatingOrder.length === 0) {
-    clearSave(); // Wipe the bad data
+    clearSave(); 
     document.getElementById('resumeBanner').style.display = 'none';
-    showToast('ℹ️ Stale data cleared');
+    showToast('ℹ️ Stale session data deleted.');
     return;
   }
 
+  // Only proceed if valid
   document.getElementById('resumeBanner').style.display = 'none';
   showScreen('tournament');
   document.getElementById('tName').textContent = '🃏 ' + S.settings.name;
@@ -922,6 +924,7 @@ function getPcts(){return Array.from(document.querySelectorAll('.pct')).map(i=>p
 
 // ── START TOURNAMENT ─────────────────────────────────────
 function startTournament(){
+  clearSave();
   if(S.players.length<2){showToast('Need at least 2 players');return;}
   if(!S.blinds.length){showToast('Add at least one blind level');return;}
   const bountyOn=document.getElementById('bountySlider')?.checked??false;
@@ -1765,44 +1768,40 @@ let actx=null;
 function getActx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
 
 function testAudio() {
-  // Force a fresh start to clear any "suspended" artifacts
-  if (actx) actx.close(); 
-  actx = new (window.AudioContext || window.webkitAudioContext)();
+  // If actx exists but is stuck, kill it and start over
+  if (actx && actx.state !== 'running') {
+    actx.close();
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+  }
   
-  // Create a silent hardware pull to wake the DAC without a thud
-  const osc = actx.createOscillator();
-  const silentGain = actx.createGain();
-  silentGain.gain.value = 0; 
-  osc.connect(silentGain);
-  silentGain.connect(actx.destination);
-  osc.start(0);
-  osc.stop(actx.currentTime + 0.1); 
-
   actx.resume().then(() => {
-    // A 100ms delay ensures the hardware is physically "Running" 
-    // before the arpeggio starts
+    // Force a 150ms delay to give the iOS DAC time to finish powering on
     setTimeout(() => {
       playSound('win'); 
-      showToast('🔊 Audio Hardware Warmed & Tested');
-    }, 100);
+      showToast('🔊 Audio Hardware Forced Active');
+    }, 150);
   });
 }
 
 // iOS requires AudioContext to be resumed after a user gesture
 function unlockAudio(){
-  const ctx=getActx();
-  if(ctx.state==='suspended')ctx.resume();
-  // Play a silent buffer to fully unlock
-  const buf=ctx.createBuffer(1,1,22050);
-  const src=ctx.createBufferSource();
-  src.buffer=buf;
-  src.connect(ctx.destination);
-  src.start(0);
-  document.removeEventListener('touchstart',unlockAudio);
-  document.removeEventListener('click',unlockAudio);
+  if(!actx) actx = new(window.AudioContext || window.webkitAudioContext)();
+  
+  // Create a silent, immediate hardware pull
+  const osc = actx.createOscillator();
+  const g = actx.createGain();
+  g.gain.value = 0.0001; // Silent but active
+  osc.connect(g);
+  g.connect(actx.destination);
+  osc.start(0);
+  osc.stop(actx.currentTime + 0.1);
+
+  if(actx.state === 'suspended') actx.resume();
+  
+  // Cleanup listener
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('click', unlockAudio);
 }
-document.addEventListener('touchstart',unlockAudio,{once:true});
-document.addEventListener('click',unlockAudio,{once:true});
 function playSound(type) {
   if (!S.settings?.sound) return;
   try {
