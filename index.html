@@ -1511,7 +1511,7 @@ function doRebuy(){
   const pkoOn=S.settings.pkoOn;
 
   const eliminatorIdx=parseInt(document.getElementById('rbEliminatorSelect')?.value);
-  const eliminator=(isNAN(eliminatorIdx) || eliminatorIdx===-1)?null:S.players[eliminatorIdx];
+  const eliminator=(isNaN(eliminatorIdx) || eliminatorIdx===-1)?null:S.players[eliminatorIdx];
     
   // Process bounty for the eliminator
   if (eliminator&&eliminator!==S.players[i]){
