@@ -1765,12 +1765,7 @@ function logResults(){
   const paidPos=S.settings.paidPos||3;
   const pays=pcts.map(p=>Math.round(prizePot*p/100));
   const bountyOn=S.settings.bountyOn;
-
-  // Count KOs per player from finishOrder.eliminatedBy
-  const koCount={};
-  S.finishOrder.forEach(f=>{
-    if(f.eliminatedBy)koCount[f.eliminatedBy]=(koCount[f.eliminatedBy]||0)+1;
-  });
+  const finalKOs = S.koCount || {};
 
   const rows=S.players.map(p=>{
     const finEntry=S.finishOrder.find(f=>f.name===p.name);
@@ -1799,7 +1794,7 @@ function logResults(){
       totalSpent:S.settings.buyinAmount*(1+rebuys+addons),
       prize,
       bounties:bountyOn?(S.bountyEarnings[p.name]||0):0,
-      kos:koCount[p.name]||0,
+      kos:finalKOs[p.name] || 0,
       inMoney:inMoney?'Yes':'No',
       headsUp:headsUp?'Yes':'No',
       won:won?'Yes':'No',
