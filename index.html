@@ -986,6 +986,8 @@ function startTournament(){
   clearSave();
   if(S.players.length<2){showToast('Need at least 2 players');return;}
   if(!S.blinds.length){showToast('Add at least one blind level');return;}
+  S.level=0;S.totalRebuys=0;S.finishOrder=[];S.running=false;S.onBreak=false;
+  S.dismissedColorUps={};S.bountyEarnings={};S.koCount={};
   const bountyOn=document.getElementById('bountySlider')?.checked??false;
   const pkoOn=bountyOn&&(document.getElementById('pkoSlider')?.checked??false);
   let finalName = document.getElementById('tournamentName').value.trim();
@@ -1021,8 +1023,6 @@ function startTournament(){
     p.busted=false;p.rebuys=0;p.addons=0;p.chips=S.settings.startingChips;
     p.bounty=S.settings.bountyAmount; // each player starts with their bounty on their head
   });
-  S.level=0;S.totalRebuys=0;S.finishOrder=[];S.running=false;S.onBreak=false;
-  S.dismissedColorUps={};S.bountyEarnings={};
   loadLevel(0);
   showScreen('tournament');
   document.getElementById('tName').textContent='🃏 '+S.settings.name;
@@ -1892,6 +1892,12 @@ function newTournament(){
   // 1. Reset the logic flags
   S.isEnding = false;
   
+  S.koCount = {};
+  S.bountyEarnings = {};
+  S.totalRebuys = 0;
+  S.finishOrder = [];
+  S.level = 0;
+
   // 2. Reset the Log Button UI
   const logBtn = document.getElementById('logBtn');
   if (logBtn) {
@@ -1905,6 +1911,7 @@ function newTournament(){
     p.rebuys = 0;
     p.addons = 0;
     p.chips = S.settings.startingChips || 1000;
+    p.bounty = S.settings.bountyAmount || 0;
   });
 
   // 4. Return to setup
