@@ -534,7 +534,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
               <label class="slider"><input type="checkbox" id="autoAdvance" checked><span class="slider-track"></span></label>
             </div>
             <div class="field"><label>Break Duration (minutes)</label><input type="number" id="breakDuration" value="10" min="1" max="60"></div>
-            <div id="appVersion" style="text-align:center; color:var(--text-dim); font-size:10px; margin:20px 0;"></div>
+            <div id="appVersion" style="text-align:left; color:var(--text-dim); font-size:10px; margin:20px 0;"></div>
           </div>
         </div>
       </div>
@@ -698,7 +698,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
-  version: "0.69",
+  version: "0.69.1",
   lastUpdate: "2026-05-08",
   players:[],blinds:[],chips:[],settings:{},
   level:0,timerSec:0,levelTotalSec:0,running:false,onBreak:false,
@@ -1426,7 +1426,7 @@ function showTModal(type){
               <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Status</th>
               <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">R</th>
               <th style="padding:4px 8px;text-align:center;font-size:11px;color:#3498db;letter-spacing:1px;text-transform:uppercase;">A</th>
-              <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;">KOs</th>
+              <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;">KO</th>
               ${bountyOn?'<th style="padding:4px 8px;text-align:center;font-size:11px;color:#e67e22;letter-spacing:1px;text-transform:uppercase;">Bounty</th><th style="padding:4px 8px;text-align:center;font-size:11px;color:#27ae60;letter-spacing:1px;text-transform:uppercase;">Earned</th>':''}
             </tr>
           </thead>
@@ -1511,27 +1511,31 @@ function doRebuy(){
   const pkoOn=S.settings.pkoOn;
 
   const eliminatorIdx=parseInt(document.getElementById('rbEliminatorSelect')?.value);
-  const eliminator=isNaN(eliminatorIdx)?null:S.players[eliminatorIdx];
+  const eliminator=(isNAN(eliminatorIdx) || eliminatorIdx===-1)?null:S.players[eliminatorIdx];
     
   // Process bounty for the eliminator
-  if(bountyOn){
-    if(eliminator&&eliminator!==S.players[i]){
-      const bountyVal=S.players[i].bounty||0;
-      if(pkoOn){
-        const halfPaid=Math.floor(bountyVal/2);
-        const halfAdded=bountyVal-halfPaid;
-        S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+halfPaid;
-        eliminator.bounty=(eliminator.bounty||0)+halfAdded;
-        if(halfPaid>0)showToast(`${eliminator.name} wins $${halfPaid} + $${halfAdded} added to bounty`);
-      }else{
-        S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+bountyVal;
-        if(bountyVal>0)showToast(`${eliminator.name} wins $${bountyVal} bounty!`);
+  if (eliminator&&eliminator!==S.players[i]){
+    S.koCount[eliminator.name]=(S.koCount[eliminator.name] || 0)+1;
+
+  
+    if(bountyOn){
+      if(eliminator&&eliminator!==S.players[i]){
+        const bountyVal=S.players[i].bounty||0;
+        if(pkoOn){
+          const halfPaid=Math.floor(bountyVal/2);
+          const halfAdded=bountyVal-halfPaid;
+          S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+halfPaid;
+          eliminator.bounty=(eliminator.bounty||0)+halfAdded;
+          if(halfPaid>0)showToast(`${eliminator.name} wins $${halfPaid} + $${halfAdded} added to bounty`);
+        }else{
+          S.bountyEarnings[eliminator.name]=(S.bountyEarnings[eliminator.name]||0)+bountyVal;
+          if(bountyVal>0)showToast(`${eliminator.name} wins $${bountyVal} bounty!`);
+        }
+        // Reset rebuy player's bounty to starting amount
+        S.players[i].bounty=S.settings.bountyAmount;
       }
-      // Reset rebuy player's bounty to starting amount
-      S.players[i].bounty=S.settings.bountyAmount;
     }
   }
-
   S.players[i].chips+=chips;S.players[i].rebuys++;S.totalRebuys++;
   closeModal();renderAll();autoSave();
   showToast(S.players[i].name+' rebuys! +'+fn(chips));
