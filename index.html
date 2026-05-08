@@ -322,7 +322,6 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
       <div class="card">
         <div class="card-title">🎰 Chip Denominations</div>
         <div id="chipEditor"></div>
-        <button class="btn-outline btn-sm" onclick="addChipDenom()" style="margin-top:6px;">+ Add Denomination</button>
       </div>
 
       <div class="card">
@@ -698,7 +697,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
-  version: "0.69.5",
+  version: "0.69.6",
   lastUpdate: "2026-05-08",
   // Master Library of all possible chips
   chipLibrary: [
@@ -1487,7 +1486,7 @@ function showTModal(type){
     `).join('');
 
     showModal(`<div class="modal-title">⚙️ Settings</div>
-      <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:15px;">
+      <div style="margin-top:15px; border-top:1px; border-bottom:1px; solid var(--border); padding-top:15px;">
         <div style="font-family:'Bebas Neue'; font-size:16px; color:var(--gold); margin-bottom:10px; letter-spacing:1px;">Live Chip Denominations</div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
           ${chipToggles}
@@ -1639,7 +1638,7 @@ function showEliminateModal(){
         </div>`).join('')}
     </div>
 
-    <div id="eliminatorSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+    <div id="eliminatorSection" style="margin-top:12px;padding-top:10px;">
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Who eliminated them?</div>
       <select id="eliminatorSelect" style="width:100%;">
         ${active.map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}
