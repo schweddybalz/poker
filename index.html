@@ -1463,7 +1463,6 @@ function showRebuyModal(){
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Who knocked them out?</div>
       <select id="rbEliminatorSelect" style="width:100%;">
-        <option value="-1">No one / Unknown</option>
         ${active.filter(p=>S.players.indexOf(p)!==firstRebuyIdx).map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}
       </select>
     </div>
@@ -1493,10 +1492,11 @@ function doRebuy(){
   const bountyOn=S.settings.bountyOn;
   const pkoOn=S.settings.pkoOn;
 
+  const eliminatorIdx=parseInt(document.getElementById('rbEliminatorSelect')?.value);
+  const eliminator=isNaN(eliminatorIdx)?null:S.players[eliminatorIdx];
+    
   // Process bounty for the eliminator
   if(bountyOn){
-    const eliminatorIdx=parseInt(document.getElementById('rbEliminatorSelect')?.value);
-    const eliminator=isNaN(eliminatorIdx)?null:S.players[eliminatorIdx];
     if(eliminator&&eliminator!==S.players[i]){
       const bountyVal=S.players[i].bounty||0;
       if(pkoOn){
@@ -1570,7 +1570,6 @@ function showEliminateModal(){
     <div id="eliminatorSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Who eliminated them?</div>
       <select id="eliminatorSelect" style="width:100%;">
-        <option value="-1">No one / Unknown</option>
         ${active.map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}
       </select>
     </div>
