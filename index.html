@@ -700,6 +700,17 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 const S={
   version: "0.69.3",
   lastUpdate: "2026-05-08",
+  // Master Library of all possible chips
+  chipLibrary: [
+    { value: 1,     color: '#ffffff', text: '#333', name: 'White',  active: false },
+    { value: 5,     color: '#c0392b', text: '#fff', name: 'Red',    active: true  },
+    { value: 10,    color: '#2980b9', text: '#fff', name: 'Blue',   active: false },
+    { value: 25,    color: '#27ae60', text: '#fff', name: 'Green',  active: true  },
+    { value: 100,   color: '#2c2c2c', text: '#fff', name: 'Black',  active: true  },
+    { value: 500,   color: '#8e44ad', text: '#fff', name: 'Purple', active: false },
+    { value: 1000,  color: '#f1c40f', text: '#fff', name: 'Yellow', active: false },
+    { value: 5000,  color: '#808080', text: '#fff', name: 'Grey',   active: false },
+  ],
   players:[],blinds:[],chips:[],settings:{},
   level:0,timerSec:0,levelTotalSec:0,running:false,onBreak:false,
   seatingOrder:[],
@@ -910,23 +921,37 @@ const SWATCHES=[
   {hex:'#27ae60',text:'#fff'},{hex:'#2c2c2c',text:'#fff'},{hex:'#8e44ad',text:'#fff'},
   {hex:'#c8b400',text:'#333'},{hex:'#e67e22',text:'#fff'},{hex:'#1abc9c',text:'#fff'},{hex:'#e91e63',text:'#fff'},
 ];
-function renderChipEditor(){
-  const el=document.getElementById('chipEditor');
-  if(!el)return;
-  el.innerHTML=S.chips.map((c,i)=>`
-    <div class="chip-editor-row">
-      <div class="chip-preview-sm" style="background:${c.color};color:${c.text};">${fn(c.value)}</div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <label style="margin:0;font-size:11px;">Value:</label>
-          <input type="number" value="${c.value}" min="1" style="max-width:70px;" onchange="S.chips[${i}].value=parseInt(this.value)||1;renderChipEditor();">
+function renderChipEditor() {
+  const el = document.getElementById('chipEditor');
+  if (!el) return;
+
+  el.innerHTML = `
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      ${S.chipLibrary.map((c, i) => `
+        <div class="player-entry" style="justify-content: space-between; padding: 8px 12px; ${c.active ? 'border-color: var(--gold);' : 'opacity: 0.5;'}">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="chip-preview-sm" style="background:${c.color}; color:${c.text}; border-style: solid; border-width: 1px;">
+              ${fn(c.value)}
+            </div>
+            <span style="font-weight:600; font-size:14px;">${c.name}</span>
+          </div>
+          <label class="slider">
+            <input type="checkbox" ${c.active ? 'checked' : ''} onchange="toggleChip(${i})">
+            <span class="slider-track"></span>
+          </label>
         </div>
-        <div class="swatch-row">
-          ${SWATCHES.map(sw=>`<div class="color-swatch ${c.color===sw.hex?'sel':''}" style="background:${sw.hex};" onclick="S.chips[${i}].color='${sw.hex}';S.chips[${i}].text='${sw.text}';renderChipEditor();"></div>`).join('')}
-        </div>
-      </div>
-      <button class="btn-icon" onclick="S.chips.splice(${i},1);renderChipEditor();">✕</button>
-    </div>`).join('');
+      `).join('')}
+    </div>
+  `;
+}
+
+function toggleChip(index) {
+  S.chipLibrary[index].active = !S.chipLibrary[index].active;
+  // Update the adctive chips list used by the game
+  S.chips = S.chipLibrary.filter(c => c.active);
+  renderChipEditor();
+  renderChipStrip(); // Update the game UI if it's running
+  autoSave();
 }
 function addChipDenom(){
   const last=S.chips.length?S.chips[S.chips.length-1].value:1000;
@@ -969,6 +994,7 @@ function startTournament(){
     const type = pkoOn ? "PKO" : (bountyOn ? "Bounty" : "Standard");
     finalName = `${x} Player ${type}`;
   }
+  S.chips=S.chipLibrary.filter(c => c.active);
   S.settings={
     buyinAmount:parseInt(document.getElementById('buyinAmount').value)||50,
     startingChips:parseInt(document.getElementById('startingChips').value)||1000,
@@ -1447,7 +1473,25 @@ function showTModal(type){
       <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>`);
   }else if(type==='settings'){
     const s=S.settings;
+    const chipToggles = S.chipLibrary.map((c, i) => `
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:20px; height:20px; border-radius:50%; background:${c.color}; border:1px solid #666;"></div>
+          <span style="font-size:13px; font-weight:600;">${fn(c.value)}</span>
+        </div>
+        <label class="slider">
+          <input type="checkbox" ${c.active ? 'checked' : ''} onchange="toggleChip(${i}); showTModal('settings');">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+    `).join('');
+
     showModal(`<div class="modal-title">⚙️ Settings</div>
+      <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:15px;">
+        <div style="font-family:'Bebas Neue'; font-size:16px; color:var(--gold); margin-bottom:10px; letter-spacing:1px;">Live Chip Denominations</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 20px;">
+          ${chipToggles}
+      </div>
       <div class="toggle-row" style="margin-bottom:14px;">
         <span class="toggle-label">Sound Alerts</span>
         <label class="slider"><input type="checkbox" id="tSoundEnabled" ${s.sound?'checked':''} onchange="S.settings.sound=this.checked;"><span class="slider-track"></span></label>
