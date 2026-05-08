@@ -534,6 +534,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
               <label class="slider"><input type="checkbox" id="autoAdvance" checked><span class="slider-track"></span></label>
             </div>
             <div class="field"><label>Break Duration (minutes)</label><input type="number" id="breakDuration" value="10" min="1" max="60"></div>
+            <div id="appVersion" style="text-align:center; color:var(--text-dim); font-size:10px; margin:20px 0;"></div>
           </div>
         </div>
       </div>
@@ -546,7 +547,6 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
           <button class="btn" id="manualLoadBtn" onclick="resumeTournament()">📂 Load Saved Game</button>
         </div>
       </div>
-      <div id="appVersion" style="text-align:center; color:var(--text-dim); font-size:10px; margin:20px 0;"></div>
     </div>
   </div>
 </div>
@@ -1387,9 +1387,16 @@ function endTournamentWithResults(earlyPlacements){
 function showTModal(type){
   if(type==='seating'){
     const bountyOn=S.settings.bountyOn;
+    
+    // Find the max KOs to highlight the leader
+    const maxKOs = Math.max(...Object.values(S.koCount || {}), 0);
+
     const rows=S.seatingOrder.map((pi,seat)=>{
       const p=S.players[pi];
       const earned=(S.bountyEarnings&&S.bountyEarnings[p.name])||0;
+      const kos = (S.koCount && S.koCount[p.name]) || 0;
+      const isKiller = kos > 0 && kos === maxKOs;
+
       return `<tr style="${p.busted?'opacity:0.38':''}">
         <td style="color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 8px;">${seat+1}</td>
         <td style="font-weight:600;font-size:15px;padding:6px 8px;">${p.name}</td>
@@ -1398,11 +1405,17 @@ function showTModal(type){
           :'<span style="color:#27ae60;font-weight:700;font-size:12px;">Active</span>'}</td>
         <td style="padding:6px 8px;text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:13px;color:var(--text-dim);">${p.rebuys>0?`<span class="rebuy-badge">R${p.rebuys}</span>`:'-'}</td>
         <td style="padding:6px 8px;text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:13px;color:var(--text-dim);">${(p.addons||0)>0?`<span class="rebuy-badge" style="background:rgba(52,152,219,0.25);color:#3498db;">A${p.addons}</span>`:'-'}</td>
+        
+        <td style="padding:6px 8px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:${isKiller ? 'var(--gold)' : 'var(--text-dim)'};font-weight:${isKiller ? '700' : '400'};">
+          ${kos > 0 ? (isKiller ? '💀 ' : '') + kos : '-'}
+        </td>
+
         ${bountyOn?`
         <td style="padding:6px 8px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:#e67e22;font-weight:700;">${p.busted?'-':'$'+(p.bounty||0)}</td>
         <td style="padding:6px 8px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:13px;color:#27ae60;font-weight:700;">${earned>0?'$'+earned:'-'}</td>`:''}
       </tr>`;
     }).join('');
+
     showModal(`<div class="modal-title">🪑 Players</div>
       <div style="max-height:440px;overflow-y:auto;">
         <table style="width:100%;border-collapse:collapse;">
@@ -1411,8 +1424,9 @@ function showTModal(type){
               <th style="padding:4px 8px;text-align:left;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">#</th>
               <th style="padding:4px 8px;text-align:left;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Name</th>
               <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Status</th>
-              <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">Rebuys</th>
-              <th style="padding:4px 8px;text-align:center;font-size:11px;color:#3498db;letter-spacing:1px;text-transform:uppercase;">Addons</th>
+              <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;">R</th>
+              <th style="padding:4px 8px;text-align:center;font-size:11px;color:#3498db;letter-spacing:1px;text-transform:uppercase;">A</th>
+              <th style="padding:4px 8px;text-align:center;font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;">KOs</th>
               ${bountyOn?'<th style="padding:4px 8px;text-align:center;font-size:11px;color:#e67e22;letter-spacing:1px;text-transform:uppercase;">Bounty</th><th style="padding:4px 8px;text-align:center;font-size:11px;color:#27ae60;letter-spacing:1px;text-transform:uppercase;">Earned</th>':''}
             </tr>
           </thead>
