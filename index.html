@@ -698,7 +698,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
-  version: "0.69.2",
+  version: "0.69.3",
   lastUpdate: "2026-05-08",
   players:[],blinds:[],chips:[],settings:{},
   level:0,timerSec:0,levelTotalSec:0,running:false,onBreak:false,
@@ -963,6 +963,12 @@ function startTournament(){
   if(!S.blinds.length){showToast('Add at least one blind level');return;}
   const bountyOn=document.getElementById('bountySlider')?.checked??false;
   const pkoOn=bountyOn&&(document.getElementById('pkoSlider')?.checked??false);
+  let finalName = document.getElementById('tournamentName').value.trim();
+  if (!finalName) {
+    const x = S.players.length;
+    const type = pkoOn ? "PKO" : (bountyOn ? "Bounty" : "Standard");
+    finalName = `${x} Player ${type}`;
+  }
   S.settings={
     buyinAmount:parseInt(document.getElementById('buyinAmount').value)||50,
     startingChips:parseInt(document.getElementById('startingChips').value)||1000,
@@ -971,7 +977,7 @@ function startTournament(){
     limitRebuys:document.getElementById('limitRebuySlider')?.checked??true,
     maxRebuys:parseInt(document.getElementById('maxRebuys').value)||999,
     rebuyCutoff:parseInt(document.getElementById('rebuyCutoff').value)||3,
-    name:document.getElementById('tournamentName').value||'Home Game',
+    name:finalName,
     sound:document.getElementById('soundEnabled').checked,
     warnAt:60,
     autoAdv:document.getElementById('autoAdvance').checked,
