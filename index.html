@@ -697,7 +697,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
-  version: "0.69.7",
+  version: "0.69.8",
   lastUpdate: "2026-05-08",
   // Master Library of all possible chips
   chipLibrary: [
@@ -1628,7 +1628,7 @@ function showEliminateModal(){
     <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Check all players eliminated on this hand. Multiple = tie.</div>
     <div id="bustList">
       ${active.map(p=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
           <input type="checkbox" id="bust_${S.players.indexOf(p)}" value="${S.players.indexOf(p)}"
             style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;"
             onchange="updateEliminatorDropdown()">
@@ -1638,7 +1638,7 @@ function showEliminateModal(){
         </div>`).join('')}
     </div>
 
-    <div id="eliminatorSection" style="margin-top:12px;padding-top:10px;">
+    <div id="eliminatorSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Who eliminated them?</div>
       <select id="eliminatorSelect" style="width:100%;">
         ${active.map(p=>`<option value="${S.players.indexOf(p)}">${p.name}</option>`).join('')}
