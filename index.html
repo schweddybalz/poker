@@ -546,6 +546,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
           <button class="btn" id="manualLoadBtn" onclick="resumeTournament()">📂 Load Saved Game</button>
         </div>
       </div>
+      <div id="appVersion" style="text-align:center; color:var(--text-dim); font-size:10px; margin:20px 0;"></div>
     </div>
   </div>
 </div>
@@ -697,6 +698,8 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
+  version: "0.69",
+  lastUpdate: "2026-05-08",
   players:[],blinds:[],chips:[],settings:{},
   level:0,timerSec:0,levelTotalSec:0,running:false,onBreak:false,
   seatingOrder:[],
@@ -766,6 +769,7 @@ window.onload=()=>{
   S.chips=defaultChips();
   S.blinds=makeSchedule(20);
   renderBlindTable();renderChipEditor();renderPrizeRows();
+  document.getElementById('appVersion').textContent = `v${S.version} • ${S.lastUpdate}`;
   // Check for saved tournament
   if(hasSavedGame()){
     document.getElementById('resumeBanner').style.display='';
