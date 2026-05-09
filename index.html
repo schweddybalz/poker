@@ -697,7 +697,7 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
-  version: "0.69.9",
+  version: "0.69.10",
   lastUpdate: "2026-05-08",
   // Master Library of all possible chips
   chipLibrary: [
@@ -963,10 +963,12 @@ function renderPrizeRows(){
   const el=document.getElementById('prizeRows'); if(!el) return;
   const num=parseInt(document.getElementById('paidPositions')?.value)||3;
   
-  // Updated defaults: 1st=50, 2nd=25, 3rd=15, 4th=10
-  const defs=[50, 25, 15, 10, 5, 3, 2]; 
+  // Defaults differ by paid positions: 3-way = 50/30/20, 4-way = 50/25/15/10
+  const defs = num <= 3 ? [50, 30, 20, 10, 5, 3, 2] : [50, 25, 15, 10, 5, 3, 2];
   
-  const existing=Array.from(el.querySelectorAll('.pct')).map(i=>parseFloat(i.value));
+  const existingInputs=Array.from(el.querySelectorAll('.pct'));
+  const prevCount=existingInputs.length;
+  const existing=prevCount===num?existingInputs.map(i=>parseFloat(i.value)):[];
   el.innerHTML=Array.from({length:num},(_,i)=>`
     <div class="prize-row">
       <label>${ord(i+1)} Place</label>
