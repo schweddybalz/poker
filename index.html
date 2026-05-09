@@ -200,11 +200,18 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
   <div class="brk-sub">Scheduled Break</div>
   <h1>BREAK</h1>
   <div class="timer-display brk" id="brkTimer" style="font-size:70px;">10:00</div>
-  <div id="brkColorUpAlert" style="display:none;color:var(--gold-light);font-size:16px;font-weight:700;letter-spacing:1px;text-align:center;padding:0 20px;"></div>
+  <div id="brkColorUpAlert" style="color:var(--gold-light);font-size:16px;font-weight:700;letter-spacing:1px;text-align:center;padding:0 20px;"></div>
   <div class="brk-actions">
     <button class="btn" id="brkRebuyBtn" onclick="showRebuyModal()" style="display:none;">💰 Rebuy</button>
     <button class="btn" id="brkAddonBtn" onclick="showAddonModal()" style="display:none;background:rgba(201,168,76,0.15);border-color:var(--gold-dark);color:var(--gold);">➕ Add-on</button>
+    <button class="btn btn-danger btn-sm" onclick="confirmEnd()">End Tournament</button>
     <button class="btn-outline" onclick="skipBreak()">Skip Break →</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:4px;">
+    <button class="nav-tab" onclick="showTModal('seating')">Players</button>
+    <button class="nav-tab" onclick="showTModal('blinds')">Blinds</button>
+    <button class="nav-tab" onclick="showTModal('settings')">Settings</button>
+    <button class="nav-tab" onclick="showTModal('results')">Standings</button>
   </div>
 </div>
 
@@ -697,8 +704,8 @@ label{display:block;color:var(--text-dim);font-size:12px;font-weight:600;letter-
 </div>
 <script>
 const S={
-  version: "0.69.10",
-  lastUpdate: "2026-05-08",
+  version: "0.70.8",
+  lastUpdate: "2026-05-09",
   // Master Library of all possible chips
   chipLibrary: [
     { value: 1,     color: '#ffffff', text: '#333', name: 'White',  active: false },
@@ -781,9 +788,8 @@ window.onload=()=>{
   renderBlindTable();renderChipEditor();renderPrizeRows();
   document.getElementById('appVersion').textContent = `v${S.version} • ${S.lastUpdate}`;
   // Check for saved tournament
-  if(hasSavedGame()){
-    document.getElementById('resumeBanner').style.display='';
-  }
+  const banner=document.getElementById('resumeBanner');
+  if(hasSavedGame()&&banner) banner.style.display='';
 };
 
 function resumeTournament() {
@@ -1340,7 +1346,6 @@ function confirmEnd(){
   const stillActive=S.players.filter(p=>!p.busted&&!alreadyRecorded.has(p.name));
 
   if(stillActive.length<=1){
-    // 0 or 1 player left — no ranking needed
     showModal(`
       <div class="modal-title">End Tournament?</div>
       <p style="color:var(--text-dim);font-size:15px;margin-bottom:4px;">This will finalize results and show the standings.</p>
@@ -1349,29 +1354,251 @@ function confirmEnd(){
         <button class="btn btn-danger" onclick="closeModal();endTournamentWithResults([])">Yes, End Tournament</button>
       </div>`);
   } else {
-    // Store names globally to avoid quote-escaping issues in onclick
+    // _earlyEndOrder tracks current drag order (name strings), starts as-is
     window._earlyEndNames = stillActive.map(p=>p.name);
+    window._earlyEndOrder = [...window._earlyEndNames];
+
+    const pot=prizePool();
+    const pcts=S.settings.pcts||[100];
+    const paidPos=S.settings.paidPos||3;
+    const pays=pcts.map(p=>Math.round(pot*p/100));
+    const chopTotal=window._earlyEndOrder.reduce((s,_,i)=>s+(i<paidPos?(pays[i]||0):0),0);
+
     showModal(`
-      <div class="modal-title">Rank Remaining Players</div>
-      <div style="color:var(--text-dim);font-size:13px;margin-bottom:14px;">Set finishing place for each player. Same place = tie (prize split equally).</div>
-      ${stillActive.map((p,i)=>`
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid var(--border);">
-          <div style="flex:1;font-weight:600;font-size:15px;">${p.name}</div>
-          <select id="rank_${i}" style="max-width:90px;">
-            ${stillActive.map((_,j)=>`<option value="${j+1}" ${j===i?'selected':''}>${ord(j+1)}</option>`).join('')}
-          </select>
-        </div>`).join('')}
+      <div class="modal-title">End &amp; Settle Up</div>
+      <div style="color:var(--text-dim);font-size:13px;margin-bottom:10px;">
+        Drag players into finishing order (1st on top), then adjust payouts for a chop if needed.<br>
+        <span style="color:var(--gold);font-weight:700;">Prize pool: $${chopTotal.toLocaleString()}</span>
+      </div>
+      <div id="chopDragList" style="margin-bottom:10px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(201,168,76,0.08);border-radius:8px;border:1px solid var(--border);margin-bottom:4px;">
+        <span style="font-size:13px;color:var(--text-dim);">Total paid out</span>
+        <span id="chopTotalDisp" style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--gold);">$${chopTotal.toLocaleString()}</span>
+      </div>
+      <div id="chopWarn" style="display:none;color:#e67e22;font-size:12px;font-weight:700;text-align:center;margin-bottom:4px;">⚠️ Total doesn't match prize pool</div>
       <div class="modal-actions">
         <button class="btn-outline" onclick="closeModal()">Cancel</button>
         <button class="btn btn-danger" onclick="submitEarlyEnd()">Finalize &amp; End</button>
       </div>`);
+
+    renderChopDragList();
+    initChopDrag();
   }
 }
 
+function renderChopDragList(){
+  const pot=prizePool();
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+  const pays=pcts.map(p=>Math.round(pot*p/100));
+  const order=window._earlyEndOrder||[];
+  const placeLabels=['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+  const medalColors=['var(--gold-light)','#C0C0C0','#CD7F32'];
+
+  const list=document.getElementById('chopDragList');
+  if(!list)return;
+  list.innerHTML=order.map((name,i)=>{
+    const defaultAmt=i<paidPos?(pays[i]||0):0;
+    const labelColor=medalColors[i]||'var(--text-dim)';
+    return `<div class="chop-drag-row" draggable="true" data-name="${name}"
+      style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 10px;
+             background:rgba(0,0,0,0.28);border-radius:8px;border:1px solid var(--border);
+             cursor:grab;user-select:none;touch-action:none;">
+      <span style="font-size:18px;line-height:1;color:var(--text-dim);">⠿</span>
+      <span class="place-label" style="font-family:'Bebas Neue',sans-serif;font-size:17px;min-width:34px;color:${labelColor};">${placeLabels[i]||ord(i+1)}</span>
+      <span style="flex:1;font-weight:600;font-size:15px;">${name}</span>
+      <span style="color:var(--text-dim);font-size:12px;">$</span>
+      <input type="number" class="chop-amt" data-name="${name}" value="${defaultAmt}" min="0" step="1"
+        style="max-width:78px;background:rgba(0,0,0,0.4);border:1px solid var(--border);color:var(--text);
+               padding:5px 8px;border-radius:6px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;"
+        oninput="updateChopTotal()">
+    </div>`;
+  }).join('');
+
+  updateChopTotal();
+}
+
+function initChopDrag(){
+  const list=document.getElementById('chopDragList');
+  if(!list)return;
+
+  let dragging=null, clone=null, placeholder=null, offsetY=0;
+
+  const placeLabels=['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+  const medalColors=['var(--gold-light)','#C0C0C0','#CD7F32'];
+  const pot=prizePool();
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+  const pays=pcts.map(p=>Math.round(pot*p/100));
+
+  function allRows(){ return Array.from(list.querySelectorAll('.chop-drag-row')); }
+  function clientY(e){ return e.touches?e.touches[0].clientY:e.clientY; }
+
+  // Compute what the order will be when dropped, based on placeholder position
+  function getLiveOrder(){
+    const order=[];
+    Array.from(list.childNodes).forEach(node=>{
+      if(node===placeholder){
+        order.push(dragging); // dragged row lands here
+      } else if(node.classList&&node.classList.contains('chop-drag-row')&&node!==dragging){
+        order.push(node);
+      }
+    });
+    return order;
+  }
+
+  function updateLiveLabels(){
+    const order=getLiveOrder();
+    order.forEach((row,i)=>{
+      const labelEl=row.querySelector('.place-label');
+      const amtInp=row.querySelector('.chop-amt');
+      if(labelEl){
+        labelEl.textContent=placeLabels[i]||ord(i+1);
+        labelEl.style.color=medalColors[i]||'var(--text-dim)';
+      }
+      if(amtInp) amtInp.value=i<paidPos?(pays[i]||0):0;
+    });
+    // Also update clone's label to match its destination place
+    const destIdx=order.indexOf(dragging);
+    const cloneLabel=clone&&clone.querySelector('.place-label');
+    if(cloneLabel&&destIdx>=0){
+      cloneLabel.textContent=placeLabels[destIdx]||ord(destIdx+1);
+      cloneLabel.style.color=medalColors[destIdx]||'var(--text-dim)';
+    }
+    updateChopTotal();
+  }
+
+  function onDown(e){
+    if(e.target.tagName==='INPUT')return;
+    e.preventDefault();
+    dragging=e.currentTarget;
+    const rect=dragging.getBoundingClientRect();
+    offsetY=clientY(e)-rect.top;
+
+    // Placeholder sits where the dragged row was
+    placeholder=document.createElement('div');
+    placeholder.style.cssText=`height:${rect.height}px;margin-bottom:8px;border-radius:8px;`+
+      `background:rgba(201,168,76,0.07);border:1px dashed rgba(201,168,76,0.3);flex-shrink:0;`;
+    dragging.parentNode.insertBefore(placeholder,dragging);
+
+    // Make dragging row invisible but keep it in DOM for order tracking
+    dragging.style.opacity='0';
+    dragging.style.pointerEvents='none';
+    dragging.style.position='absolute'; // take out of flow without display:none
+
+    // Floating clone follows cursor
+    clone=dragging.cloneNode(true);
+    clone.style.position='fixed';
+    clone.style.left=rect.left+'px';
+    clone.style.top=rect.top+'px';
+    clone.style.width=rect.width+'px';
+    clone.style.height=rect.height+'px';
+    clone.style.zIndex='3000';
+    clone.style.pointerEvents='none';
+    clone.style.boxShadow='0 8px 32px rgba(0,0,0,0.8)';
+    clone.style.border='1px solid var(--gold)';
+    clone.style.borderRadius='8px';
+    clone.style.background='#122b1a';
+    clone.style.opacity='0.96';
+    clone.style.display='flex';
+    clone.style.alignItems='center';
+    clone.style.gap='10px';
+    clone.style.padding='9px 10px';
+    clone.style.cursor='grabbing';
+    document.body.appendChild(clone);
+
+    document.addEventListener('mousemove',onMove,{passive:false});
+    document.addEventListener('touchmove',onMove,{passive:false});
+    document.addEventListener('mouseup',onUp);
+    document.addEventListener('touchend',onUp);
+  }
+
+  function onMove(e){
+    if(!clone)return;
+    e.preventDefault();
+    const y=clientY(e);
+    clone.style.top=(y-offsetY)+'px';
+
+    // Move placeholder to show where drop will land, comparing against visible rows only
+    const visibleRows=allRows().filter(r=>r!==dragging);
+    let placed=false;
+    for(const row of visibleRows){
+      const box=row.getBoundingClientRect();
+      if(y<box.top+box.height/2){
+        list.insertBefore(placeholder,row);
+        placed=true;
+        break;
+      }
+    }
+    if(!placed){
+      // Append before the dragging row (which is at the end, invisible)
+      list.insertBefore(placeholder,dragging);
+    }
+
+    updateLiveLabels();
+  }
+
+  function onUp(){
+    if(!dragging)return;
+
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('touchmove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchend',onUp);
+
+    // Capture final order from live layout before DOM changes
+    window._earlyEndOrder=getLiveOrder().map(r=>r.dataset.name);
+
+    // Clean up
+    dragging.style.opacity='';
+    dragging.style.pointerEvents='';
+    dragging.style.position='';
+    placeholder.remove();
+    clone.remove();
+
+    dragging=null; clone=null; placeholder=null;
+
+    renderChopDragList();
+    initChopDrag();
+  }
+
+  allRows().forEach(row=>{
+    row.addEventListener('mousedown',onDown);
+    row.addEventListener('touchstart',onDown,{passive:false});
+  });
+}
+
+function updateChopTotal(){
+  const pot=prizePool();
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+  const pays=pcts.map(p=>Math.round(pot*p/100));
+  const order=window._earlyEndOrder||[];
+  const expectedTotal=order.reduce((s,_,i)=>s+(i<paidPos?(pays[i]||0):0),0);
+
+  let total=0;
+  document.querySelectorAll('.chop-amt').forEach(inp=>{ total+=parseFloat(inp.value)||0; });
+
+  const dispEl=document.getElementById('chopTotalDisp');
+  const warnEl=document.getElementById('chopWarn');
+  if(dispEl)dispEl.textContent='$'+total.toLocaleString();
+  if(warnEl)warnEl.style.display=Math.abs(total-expectedTotal)>1?'':'none';
+}
+
 function submitEarlyEnd(){
-  const names=window._earlyEndNames||[];
-  const placements=names.map((name,i)=>({name, place:parseInt(document.getElementById('rank_'+i).value)}));
-  // Ties are allowed — same place = split prize
+  const order=window._earlyEndOrder||[];
+  const amtInputs=Array.from(document.querySelectorAll('.chop-amt'));
+
+  const pot=prizePool();
+  const pcts=S.settings.pcts||[100];
+  const paidPos=S.settings.paidPos||3;
+  const pays=pcts.map(p=>Math.round(pot*p/100));
+
+  const placements=order.map((name,i)=>{
+    const defaultAmt=i<paidPos?(pays[i]||0):0;
+    const chopAmt=parseFloat(amtInputs[i]?.value)||0;
+    return { name, place:i+1, chopAmt: Math.abs(chopAmt-defaultAmt)>0.5 ? chopAmt : null };
+  });
   closeModal();
   endTournamentWithResults(placements);
 }
@@ -1390,7 +1617,7 @@ function endTournamentWithResults(earlyPlacements){
   // Add early-end ranked players to finishOrder
   const alreadyRecorded=new Set(S.finishOrder.map(f=>f.name));
   if(earlyPlacements&&earlyPlacements.length>0){
-    earlyPlacements.forEach(p=>S.finishOrder.push({name:p.name, place:p.place}));
+    earlyPlacements.forEach(p=>S.finishOrder.push({name:p.name, place:p.place, chopAmt:p.chopAmt??null}));
     // Award bounties to each active player's own bounty (they keep it)
     if(S.settings.bountyOn){
       earlyPlacements.forEach(p=>{
@@ -1746,7 +1973,6 @@ function buildStandingsRows(finishOrder, players, pot, pcts, paidPos, forResults
   const pays=pcts.map(p=>Math.round(pot*p/100));
 
   // Ties: total the prize money for all tied spots, divide evenly
-  // e.g. 2 players tie for 2nd: 2nd=$150 + 3rd=$100 = $250 total → $125 each
   function payForPlace(place, count){
     if(place>paidPos||count===0)return 0;
     let total=0;
@@ -1756,11 +1982,11 @@ function buildStandingsRows(finishOrder, players, pot, pcts, paidPos, forResults
     return Math.round(total/count);
   }
 
-  // Group finishOrder by place
+  // Group finishOrder by place, keeping full entry objects
   const byPlace={};
   finishOrder.forEach(f=>{
     if(!byPlace[f.place])byPlace[f.place]=[];
-    byPlace[f.place].push(f.name);
+    byPlace[f.place].push(f);
   });
 
   const totalPlayers=players.length;
@@ -1771,22 +1997,23 @@ function buildStandingsRows(finishOrder, players, pot, pcts, paidPos, forResults
     const group=byPlace[place];
     const cls=place===1?'fp-gold':place===2?'fp-silver':place===3?'fp-bronze':'';
     if(group&&group.length>0){
-      const pay=payForPlace(place,group.length);
+      const defaultPay=payForPlace(place,group.length);
       const tieLabel=group.length>1?` <span style="font-size:11px;color:var(--gold-dark);font-weight:600;letter-spacing:0.5px;">TIE</span>`:'';
-      group.forEach(name=>{
+      group.forEach(entry=>{
+        const name=entry.name;
+        // Use chop amount if set, otherwise fall back to default payout
+        const pay=entry.chopAmt!=null?entry.chopAmt:defaultPay;
+        const isChop=entry.chopAmt!=null&&entry.chopAmt!==defaultPay;
         const bountyEarned=(S.bountyEarnings&&S.bountyEarnings[name])||0;
         rows.push(`<div class="finish-item">
           <div class="finish-place ${cls}">${ord(place)}</div>
           <div style="flex:1;font-weight:600;${forResults?'font-size:16px;':''}">${name}${tieLabel}</div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-            ${pay?`<div class="finish-pay">$${pay.toLocaleString()}</div>`:''}
+            ${pay?`<div class="finish-pay">$${pay.toLocaleString()}${isChop?' <span style="font-size:10px;color:var(--gold-dark);font-weight:600;">CHOP</span>':''}</div>`:''}
             ${bountyEarned>0?`<div style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#e67e22;">+$${bountyEarned} bounty</div>`:''}
           </div>
         </div>`);
       });
-      // Skip ahead if this was a tie (those places are consumed)
-      // The loop variable will naturally advance, but tied players consumed extra places
-      // We need to skip the consumed spots
       place+=group.length-1;
     }else{
       // TBD — active player slot
@@ -1845,10 +2072,12 @@ function logResults(){
     const inMoney=finish<=paidPos;
     const headsUp=finish<=2;
     const won=finish===1;
-    // Handle tied prizes
+    // Handle tied prizes and chop amounts
     const tiedAt=S.finishOrder.filter(f=>f.place===finish);
     let prize=0;
-    if(inMoney){
+    if(finEntry?.chopAmt!=null){
+      prize=finEntry.chopAmt; // chop overrides formula
+    } else if(inMoney){
       let total=0;
       for(let i=0;i<tiedAt.length;i++){if(finish+i<=paidPos)total+=(pays[finish+i-1]||0);}
       prize=tiedAt.length>1?Math.round(total/tiedAt.length):total;
